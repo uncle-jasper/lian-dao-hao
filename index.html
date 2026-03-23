@@ -1,0 +1,2190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>練到好 — Liàn Dào Hǎo</title>
+<meta name="description" content="Practice Taiwanese Mandarin until it's good. Content-driven sessions for TOCFL learners.">
+<meta name="theme-color" content="#1a1714">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="練到好">
+<link rel="apple-touch-icon" id="apple-touch-icon">
+<link rel="manifest" id="pwa-manifest" href="manifest.json">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600&family=Spectral:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@300;400&display=swap');
+
+  :root {
+    --bg: #1a1714;
+    --bg2: #211e1a;
+    --bg3: #2a2520;
+    --border: #3d3730;
+    --text: #e8ddd0;
+    --text-dim: #8a7d6e;
+    --text-muted: #5a5048;
+    --accent: #c9924a;
+    --accent-dim: #7a5a2e;
+    --accent-glow: rgba(201,146,74,0.15);
+    --green: #7ab87a;
+    --red: #c47a6a;
+    --blue: #7a9ab8;
+    --sidebar-w: 220px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Spectral', Georgia, serif;
+    font-size: 16px;
+    line-height: 1.6;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+  }
+
+  /* ── SIDEBAR ── */
+  #sidebar {
+    width: var(--sidebar-w);
+    min-width: var(--sidebar-w);
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 0;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-logo {
+    padding: 0 20px 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .sidebar-logo .zh {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+  }
+  .sidebar-logo .en {
+    font-family: 'Spectral', serif;
+    font-size: 11px;
+    font-style: italic;
+    color: var(--text-dim);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .nav-section {
+    padding: 0 12px;
+    margin-bottom: 8px;
+  }
+  .nav-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    padding: 0 8px;
+    margin-bottom: 6px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-dim);
+    transition: all 0.15s;
+    border: 1px solid transparent;
+    position: relative;
+  }
+  .nav-item:hover { background: var(--bg3); color: var(--text); }
+  .nav-item.active {
+    background: var(--accent-glow);
+    border-color: var(--accent-dim);
+    color: var(--accent);
+  }
+  .nav-item .step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    width: 16px;
+    text-align: center;
+  }
+  .nav-item.active .step-num { color: var(--accent); }
+  .nav-item.completed .step-num { color: var(--green); }
+  .nav-item.completed { color: var(--text-dim); }
+  .nav-item .step-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+  .nav-item.active .step-dot { background: var(--accent); }
+  .nav-item.completed .step-dot { background: var(--green); }
+
+  .session-timer {
+    margin: auto 0 0;
+    padding: 16px 20px 0;
+    border-top: 1px solid var(--border);
+  }
+  .timer-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .timer-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 26px;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+  }
+  .timer-bar {
+    height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .timer-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 1px;
+    transition: width 1s linear;
+    width: 0%;
+  }
+
+  /* ── MAIN ── */
+  #main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #topbar {
+    height: 52px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 28px;
+    gap: 16px;
+    background: var(--bg);
+    flex-shrink: 0;
+  }
+  .topbar-title {
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--text-dim);
+    flex: 1;
+  }
+  .topbar-title span { color: var(--text); font-style: normal; font-weight: 600; }
+  .btn {
+    padding: 6px 14px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--text-dim);
+    font-family: 'Spectral', serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn:hover { border-color: var(--accent-dim); color: var(--text); }
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #1a1714;
+    font-weight: 600;
+  }
+  .btn.primary:hover { background: #d9a25a; }
+  .btn.sm { padding: 4px 10px; font-size: 12px; }
+  .btn.ghost { background: transparent; border-color: transparent; }
+  .btn.ghost:hover { background: var(--bg3); border-color: var(--border); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  #content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 32px 40px;
+    scroll-behavior: smooth;
+  }
+  #content::-webkit-scrollbar { width: 6px; }
+  #content::-webkit-scrollbar-track { background: transparent; }
+  #content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── SCREENS ── */
+  .screen { display: none; animation: fadeIn 0.3s ease; }
+  .screen.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── SETUP SCREEN ── */
+  .setup-header {
+    margin-bottom: 32px;
+  }
+  .setup-header h1 {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 28px;
+    font-weight: 300;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .setup-header p {
+    color: var(--text-dim);
+    font-style: italic;
+    font-size: 15px;
+  }
+
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .card-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+
+  .input-group { margin-bottom: 16px; }
+  .input-label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 10px;
+  }
+  input[type="text"], input[type="password"], textarea, select {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: 'Spectral', serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s;
+    resize: vertical;
+  }
+  input[type="text"]:focus, input[type="password"]:focus, textarea:focus, select:focus {
+    border-color: var(--accent-dim);
+  }
+  select option { background: var(--bg3); }
+  textarea { min-height: 80px; }
+
+  .input-row { display: flex; gap: 10px; }
+  .input-row input { flex: 1; }
+
+  .source-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .source-tab {
+    padding: 6px 14px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text-dim);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    transition: all 0.15s;
+  }
+  .source-tab:hover { color: var(--text); }
+  .source-tab.active { background: var(--accent-glow); border-color: var(--accent-dim); color: var(--accent); }
+
+  .source-panel { display: none; }
+  .source-panel.active { display: block; }
+
+  .char-counter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 5px;
+    min-height: 18px;
+  }
+  .char-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    transition: color 0.2s;
+  }
+  .char-count.ok { color: var(--green); }
+  .char-count.warn { color: var(--accent); }
+  .char-count.over { color: var(--red); }
+  .char-warning {
+    font-family: 'Spectral', serif;
+    font-size: 11px;
+    font-style: italic;
+    color: var(--accent);
+    opacity: 0;
+    transition: opacity 0.3s;
+    text-align: right;
+    max-width: 75%;
+  }
+  .char-warning.visible { opacity: 1; }
+  .char-warning.over { color: var(--red); }
+
+  .hint {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .hint a { color: var(--accent-dim); text-decoration: none; }
+  .hint a:hover { color: var(--accent); text-decoration: underline; }
+
+  .tag-input-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    min-height: 44px;
+    align-items: center;
+    cursor: text;
+  }
+  .tag-input-wrap:focus-within { border-color: var(--accent-dim); }
+  .tag {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--bg);
+    border: 1px solid var(--accent-dim);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 13px;
+    color: var(--accent);
+    font-family: 'Noto Serif TC', serif;
+  }
+  .tag .remove {
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 11px;
+    line-height: 1;
+    padding: 1px;
+  }
+  .tag .remove:hover { color: var(--red); }
+  .tag-input {
+    border: none !important;
+    background: transparent !important;
+    padding: 2px 4px !important;
+    min-width: 120px;
+    flex: 1;
+    color: var(--text) !important;
+    font-size: 14px !important;
+    outline: none;
+    width: auto !important;
+  }
+
+  .file-drop {
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .file-drop:hover, .file-drop.drag { border-color: var(--accent-dim); background: var(--accent-glow); }
+  .file-drop input { display: none; }
+
+  /* ── SESSION SCREEN ── */
+  .segment-header {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .segment-zh {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .segment-en {
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--text-dim);
+  }
+  .segment-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-left: auto;
+  }
+
+  .challenge-block {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .challenge-block.active-challenge {
+    border-color: var(--accent-dim);
+    box-shadow: 0 0 0 1px var(--accent-dim), 0 4px 20px rgba(0,0,0,0.3);
+  }
+
+  .challenge-text {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 22px;
+    font-weight: 400;
+    line-height: 1.7;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+  .challenge-text.large { font-size: 28px; }
+  .challenge-english {
+    font-size: 14px;
+    color: var(--text-dim);
+    font-style: italic;
+    margin-bottom: 14px;
+    display: none;
+  }
+  .challenge-english.shown { display: block; }
+
+  .show-english-btn {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 0;
+    margin-bottom: 14px;
+    transition: color 0.15s;
+    display: block;
+  }
+  .show-english-btn:hover { color: var(--accent); }
+
+  .mc-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .mc-option {
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg3);
+    color: var(--text);
+    font-family: 'Noto Serif TC', serif;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+  }
+  .mc-option:hover { border-color: var(--accent-dim); background: var(--accent-glow); }
+  .mc-option.correct { border-color: var(--green); background: rgba(122,184,122,0.1); color: var(--green); }
+  .mc-option.wrong { border-color: var(--red); background: rgba(196,122,106,0.1); color: var(--red); }
+  .mc-option:disabled { cursor: default; }
+
+  .response-area {
+    position: relative;
+    margin-top: 14px;
+  }
+  .response-area textarea {
+    padding-right: 44px;
+    font-family: 'Noto Serif TC', serif;
+    font-size: 16px;
+    min-height: 70px;
+  }
+  .mic-btn {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--text-dim);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.15s;
+  }
+  .mic-btn:hover { border-color: var(--accent-dim); color: var(--accent); }
+  .mic-btn.recording {
+    border-color: var(--red);
+    background: rgba(196,122,106,0.15);
+    color: var(--red);
+    animation: pulse 1s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(196,122,106,0.4); }
+    50% { box-shadow: 0 0 0 6px rgba(196,122,106,0); }
+  }
+
+  .feedback-block {
+    padding: 14px 16px;
+    border-radius: 6px;
+    margin-top: 12px;
+    font-size: 14px;
+    line-height: 1.6;
+    display: none;
+  }
+  .feedback-block.shown { display: block; }
+  .feedback-block.correct { background: rgba(122,184,122,0.1); border: 1px solid rgba(122,184,122,0.3); color: var(--green); }
+  .feedback-block.incorrect { background: rgba(196,122,106,0.1); border: 1px solid rgba(196,122,106,0.3); color: var(--red); }
+  .feedback-block.neutral { background: var(--bg3); border: 1px solid var(--border); color: var(--text-dim); }
+
+  .flag-btn {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 0;
+    margin-top: 10px;
+    transition: color 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .flag-btn:hover { color: var(--accent); }
+  .flag-btn.flagged { color: var(--accent); }
+
+  .action-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  /* Vocab cards */
+  .vocab-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .vocab-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .vocab-card:hover { border-color: var(--accent-dim); }
+  .vocab-card.selected { border-color: var(--accent); background: var(--accent-glow); }
+  .vocab-card .zh-word { font-family: 'Noto Serif TC', serif; font-size: 20px; color: var(--text); }
+  .vocab-card .pinyin { font-size: 11px; color: var(--text-muted); font-style: italic; margin-top: 4px; }
+  .vocab-card .en-word { font-size: 11px; color: var(--text-dim); margin-top: 3px; display: none; }
+  .vocab-card:hover .en-word, .vocab-card.selected .en-word { display: block; }
+
+  /* Roleplay */
+  .convo-thread {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+    max-height: 380px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .convo-thread::-webkit-scrollbar { width: 4px; }
+  .convo-thread::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .message {
+    display: flex;
+    gap: 10px;
+    animation: fadeIn 0.2s ease;
+  }
+  .message.user { flex-direction: row-reverse; }
+  .message-avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+    font-family: 'Noto Serif TC', serif;
+  }
+  .message.user .message-avatar { background: var(--accent-glow); border-color: var(--accent-dim); color: var(--accent); }
+  .message-bubble {
+    max-width: 75%;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-family: 'Noto Serif TC', serif;
+    font-size: 15px;
+    line-height: 1.6;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .message.user .message-bubble {
+    background: var(--accent-glow);
+    border-color: var(--accent-dim);
+  }
+  .message-en {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'Spectral', serif;
+    font-style: italic;
+    margin-top: 4px;
+    display: none;
+  }
+  .message-bubble:hover .message-en { display: block; }
+
+  /* Review */
+  .review-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .review-stat {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px;
+    text-align: center;
+  }
+  .review-stat .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 36px;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .review-stat .label {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  .flagged-list { display: flex; flex-direction: column; gap: 8px; }
+  .flagged-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .flagged-item .zh { font-family: 'Noto Serif TC', serif; font-size: 16px; color: var(--accent); }
+  .flagged-item .en { font-size: 13px; color: var(--text-dim); font-style: italic; flex: 1; }
+  .flagged-item .added { font-size: 11px; color: var(--green); font-family: 'JetBrains Mono', monospace; }
+
+  /* Settings */
+  .settings-section { margin-bottom: 28px; }
+  .settings-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .loading-dots {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .loading-dots span {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: dot-bounce 1.2s infinite ease-in-out;
+  }
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dot-bounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
+  .status-bar {
+    padding: 8px 14px;
+    background: var(--bg3);
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .status-bar.error { color: var(--red); background: rgba(196,122,106,0.08); border: 1px solid rgba(196,122,106,0.2); }
+  .status-bar.success { color: var(--green); }
+
+  /* Bank view */
+  .bank-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 8px;
+  }
+  .bank-item .zh { font-family: 'Noto Serif TC', serif; font-size: 17px; color: var(--text); }
+  .bank-item .en { font-size: 13px; color: var(--text-dim); font-style: italic; flex: 1; }
+  .bank-item .remove-bank { color: var(--text-muted); cursor: pointer; font-size: 14px; transition: color 0.15s; }
+  .bank-item .remove-bank:hover { color: var(--red); }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  .progress-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .progress-pill .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+
+  hr.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+  /* Responsive hint for narrow windows */
+  @media (max-width: 700px) {
+    #sidebar { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div class="sidebar-logo">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <svg width="38" height="38" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+        <rect x="0" y="0" width="300" height="300" rx="54" fill="#1a1714"/>
+        <rect x="6" y="6" width="288" height="288" rx="49" fill="none" stroke="#3d3730" stroke-width="1.5"/>
+        <g transform="translate(150,125)">
+          <rect x="-58" y="-58" width="116" height="116" rx="7" transform="rotate(45)" fill="none" stroke="#c9924a" stroke-width="3" opacity="0.85"/>
+          <rect x="-25" y="-27" width="50" height="9" rx="2.5" fill="#c9924a" opacity="1"/>
+          <rect x="-33" y="-7" width="66" height="9" rx="2.5" fill="#c9924a" opacity="0.7"/>
+          <rect x="-25" y="13" width="50" height="9" rx="2.5" fill="#c9924a" opacity="0.4"/>
+          <circle cx="0" cy="-67" r="3.5" fill="#c9924a" opacity="0.55"/>
+          <circle cx="67" cy="0" r="3.5" fill="#c9924a" opacity="0.4"/>
+          <circle cx="0" cy="67" r="3.5" fill="#c9924a" opacity="0.55"/>
+          <circle cx="-67" cy="0" r="3.5" fill="#c9924a" opacity="0.4"/>
+        </g>
+        <text x="150" y="263" text-anchor="middle" font-family="'Noto Serif TC',serif" font-size="62" font-weight="600" fill="#c9924a" opacity="0.9">練</text>
+      </svg>
+      <div>
+        <div class="zh">練到好</div>
+        <div class="en">Liàn Dào Hǎo</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Session</div>
+    <div class="nav-item" id="nav-setup" onclick="showScreen('setup')">
+      <span class="step-num">—</span> Setup
+      <span class="step-dot"></span>
+    </div>
+    <div class="nav-item" id="nav-warmup" onclick="navToStep('warmup')">
+      <span class="step-num">1</span> Warm-up
+      <span class="step-dot"></span>
+    </div>
+    <div class="nav-item" id="nav-comprehension" onclick="navToStep('comprehension')">
+      <span class="step-num">2</span> Comprehension
+      <span class="step-dot"></span>
+    </div>
+    <div class="nav-item" id="nav-vocab" onclick="navToStep('vocab')">
+      <span class="step-num">3</span> Vocab &amp; Grammar
+      <span class="step-dot"></span>
+    </div>
+    <div class="nav-item" id="nav-roleplay" onclick="navToStep('roleplay')">
+      <span class="step-num">4</span> Roleplay
+      <span class="step-dot"></span>
+    </div>
+    <div class="nav-item" id="nav-review" onclick="navToStep('review')">
+      <span class="step-num">5</span> Review
+      <span class="step-dot"></span>
+    </div>
+  </div>
+
+  <div class="nav-section" style="margin-top:12px;">
+    <div class="nav-label">Tools</div>
+    <div class="nav-item" id="nav-bank" onclick="showScreen('bank')">
+      <span class="step-num">⊞</span> Struggle Bank
+      <span class="step-dot"></span>
+    </div>
+    <div class="nav-item" id="nav-settings" onclick="showScreen('settings')">
+      <span class="step-num">⚙</span> Settings
+      <span class="step-dot"></span>
+    </div>
+  </div>
+
+  <div class="session-timer">
+    <div class="timer-label">Session Time</div>
+    <div class="timer-display" id="timer-display">00:00</div>
+    <div class="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="topbar">
+    <div class="topbar-title" id="topbar-title">
+      <span>練到好</span> — Liàn Dào Hǎo
+    </div>
+    <div id="topbar-actions"></div>
+  </div>
+  <div id="content">
+
+    <!-- SETUP SCREEN -->
+    <div class="screen active" id="screen-setup">
+      <div class="setup-header">
+        <h1>新課程 — New Session</h1>
+        <p>Choose your content source and configure this session.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Content Source</div>
+        <div class="source-tabs">
+          <div class="source-tab active" onclick="setSourceTab('youtube')">YouTube</div>
+          <div class="source-tab" onclick="setSourceTab('article')">Article</div>
+          <div class="source-tab" onclick="setSourceTab('podcast')">Podcast</div>
+          <div class="source-tab" onclick="setSourceTab('paste')">Paste Text</div>
+        </div>
+
+        <div class="source-panel active" id="source-youtube">
+          <div class="input-group">
+            <label class="input-label">YouTube URL</label>
+            <div class="input-row">
+              <input type="text" id="yt-url" placeholder="https://www.youtube.com/watch?v=...">
+              <button class="btn" onclick="fetchYouTubeTranscript()">Fetch</button>
+            </div>
+            <div class="hint">App will attempt to pull CC subtitles. Hard-coded subs cannot be auto-extracted.</div>
+          </div>
+          <div class="input-group" id="yt-transcript-group" style="display:none">
+            <label class="input-label">Transcript (auto-fetched or paste manually)</label>
+            <textarea id="yt-transcript" placeholder="Paste transcript here if auto-fetch fails..." oninput="updateCounter('yt-transcript','yt-counter')"></textarea>
+            <div class="char-counter">
+              <span class="char-count" id="yt-counter">0 chars</span>
+              <span class="char-warning" id="yt-warning"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="source-panel" id="source-article">
+          <div class="input-group">
+            <label class="input-label">Article URL or paste text</label>
+            <div class="input-row">
+              <input type="text" id="article-url" placeholder="https://...">
+              <button class="btn" onclick="fetchArticle()">Fetch</button>
+            </div>
+          </div>
+          <div class="input-group">
+            <textarea id="article-text" placeholder="Or paste article text directly here..." oninput="updateCounter('article-text','article-counter')"></textarea>
+            <div class="char-counter">
+              <span class="char-count" id="article-counter">0 chars</span>
+              <span class="char-warning" id="article-warning"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="source-panel" id="source-podcast">
+          <div class="input-group">
+            <label class="input-label">Upload audio file (MP3, M4A, WAV)</label>
+            <div class="file-drop" id="audio-drop" onclick="document.getElementById('audio-file').click()">
+              <input type="file" id="audio-file" accept=".mp3,.m4a,.wav,.ogg" onchange="handleAudioFile(event)">
+              <div>Drop audio file here or click to browse</div>
+              <div class="hint" style="margin-top:6px;">Requires OpenAI API key (Whisper) — or use the free tools below.</div>
+            </div>
+            <div class="hint" style="margin-top:8px;">
+              💡 No OpenAI key? Transcribe for free first at <a href="https://whisperapp.net" target="_blank">whisperapp.net</a> or <a href="https://memo.ac" target="_blank">memo.ac</a>, then paste the result below.
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Or paste transcript</label>
+            <textarea id="podcast-text" placeholder="Paste your podcast transcript here..." oninput="updateCounter('podcast-text','podcast-counter')"></textarea>
+            <div class="char-counter">
+              <span class="char-count" id="podcast-counter">0 chars</span>
+              <span class="char-warning" id="podcast-warning"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="source-panel" id="source-paste">
+          <div class="input-group">
+            <textarea id="paste-text" style="min-height:140px" placeholder="Paste any Chinese text here — article excerpt, dialogue, whatever you want to study..." oninput="updateCounter('paste-text','paste-counter')"></textarea>
+            <div class="char-counter">
+              <span class="char-count" id="paste-counter">0 chars</span>
+              <span class="char-warning" id="paste-warning"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Session Focus</div>
+        <div class="input-group">
+          <label class="input-label">What should this session emphasize?</label>
+          <textarea id="session-focus" placeholder="e.g. 'I keep confusing 而且 and 但是. My listening comprehension drops when speech is fast. I struggle with measure words for flat objects.'" style="min-height:70px;"></textarea>
+          <div class="hint">Optional — helps Claude tailor the challenges toward your weakest points.</div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Session length</label>
+          <select id="session-length">
+            <option value="15">15 minutes</option>
+            <option value="30" selected>30 minutes</option>
+            <option value="45">45 minutes</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:12px; margin-top:8px;">
+        <button class="btn primary" onclick="startSession()" id="start-btn">Begin Session →</button>
+        <button class="btn" onclick="showScreen('bank')">Manage Struggle Bank</button>
+      </div>
+    </div>
+
+    <!-- WARMUP SCREEN -->
+    <div class="screen" id="screen-warmup">
+      <div class="segment-header">
+        <div class="segment-zh">準備</div>
+        <div class="segment-en">Warm-up</div>
+        <div class="segment-meta">5 min</div>
+      </div>
+      <div id="warmup-content">
+        <div class="status-bar"><div class="loading-dots"><span></span><span></span><span></span></div> Generating warm-up from your content...</div>
+      </div>
+      <div class="action-row" id="warmup-actions" style="display:none">
+        <button class="btn primary" onclick="goToSegment('comprehension')">Next: Comprehension →</button>
+      </div>
+    </div>
+
+    <!-- COMPREHENSION SCREEN -->
+    <div class="screen" id="screen-comprehension">
+      <div class="segment-header">
+        <div class="segment-zh">理解</div>
+        <div class="segment-en">Comprehension</div>
+        <div class="segment-meta">8 min</div>
+      </div>
+      <div id="comprehension-content">
+        <div class="status-bar"><div class="loading-dots"><span></span><span></span><span></span></div> Generating comprehension challenges...</div>
+      </div>
+      <div class="action-row" id="comprehension-actions" style="display:none">
+        <button class="btn primary" onclick="goToSegment('vocab')">Next: Vocab & Grammar →</button>
+      </div>
+    </div>
+
+    <!-- VOCAB SCREEN -->
+    <div class="screen" id="screen-vocab">
+      <div class="segment-header">
+        <div class="segment-zh">詞彙與語法</div>
+        <div class="segment-en">Vocabulary & Grammar</div>
+        <div class="segment-meta">7 min</div>
+      </div>
+      <div id="vocab-content">
+        <div class="status-bar"><div class="loading-dots"><span></span><span></span><span></span></div> Extracting vocabulary from content...</div>
+      </div>
+      <div class="action-row" id="vocab-actions" style="display:none">
+        <button class="btn primary" onclick="goToSegment('roleplay')">Next: Roleplay →</button>
+      </div>
+    </div>
+
+    <!-- ROLEPLAY SCREEN -->
+    <div class="screen" id="screen-roleplay">
+      <div class="segment-header">
+        <div class="segment-zh">角色扮演</div>
+        <div class="segment-en">Roleplay Conversation</div>
+        <div class="segment-meta">8 min</div>
+      </div>
+      <div id="roleplay-content">
+        <div class="status-bar"><div class="loading-dots"><span></span><span></span><span></span></div> Setting up conversation scenario...</div>
+      </div>
+    </div>
+
+    <!-- REVIEW SCREEN -->
+    <div class="screen" id="screen-review">
+      <div class="segment-header">
+        <div class="segment-zh">回顧</div>
+        <div class="segment-en">Session Review</div>
+        <div class="segment-meta">2 min</div>
+      </div>
+      <div id="review-content"></div>
+    </div>
+
+    <!-- BANK SCREEN -->
+    <div class="screen" id="screen-bank">
+      <div class="setup-header">
+        <h1>詞彙庫 — Struggle Bank</h1>
+        <p>Words and grammar patterns you want to be drilled on in every session.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Add Item</div>
+        <div class="input-row" style="margin-bottom:10px;">
+          <input type="text" id="bank-zh" placeholder="Chinese (e.g. 而且)" style="font-family:'Noto Serif TC',serif; font-size:16px;">
+          <input type="text" id="bank-en" placeholder="English meaning or note">
+          <button class="btn primary" onclick="addBankItem()">Add</button>
+        </div>
+        <div class="hint">Add individual words, phrases, or grammar patterns. They'll be woven into every session.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Current Bank (<span id="bank-count">0</span> items)</div>
+        <div id="bank-list"></div>
+        <div class="empty-state" id="bank-empty">No items yet. Add vocab and grammar patterns above, or flag items during sessions.</div>
+      </div>
+      <button class="btn" onclick="showScreen('setup')" style="margin-top:8px;">← Back to Session</button>
+    </div>
+
+    <!-- SETTINGS SCREEN -->
+    <div class="screen" id="screen-settings">
+      <div class="setup-header">
+        <h1>設定 — Settings</h1>
+        <p>API keys and preferences.</p>
+      </div>
+
+      <div class="card">
+        <div class="settings-title">API Keys</div>
+        <div class="settings-section">
+          <div class="input-group">
+            <label class="input-label">Anthropic API Key (required)</label>
+            <input type="password" id="anthropic-key" placeholder="sk-ant-...">
+            <div class="hint">Required for all session features. Get yours at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">OpenAI API Key (optional — for podcast transcription)</label>
+            <input type="password" id="openai-key" placeholder="sk-...">
+            <div class="hint">
+              Only needed if you want to upload podcast audio files directly. Without this, use the free tools
+              <a href="https://whisperapp.net" target="_blank">Whisper.app</a> or
+              <a href="https://memo.ac" target="_blank">Memo.ac</a> to transcribe first, then paste the text.
+            </div>
+          </div>
+          <button class="btn primary" onclick="saveSettings()">Save Keys</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="settings-title">Preferences</div>
+        <div class="input-group">
+          <label class="input-label">Your current level</label>
+          <select id="pref-level">
+            <option value="tocfl3" selected>TOCFL Level 3 (Intermediate)</option>
+            <option value="tocfl4">TOCFL Level 4 (Upper Intermediate)</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Preferred response language for feedback</label>
+          <select id="pref-feedback-lang">
+            <option value="english" selected>English</option>
+            <option value="chinese">Traditional Chinese</option>
+            <option value="mixed">Mixed (Chinese with English gloss)</option>
+          </select>
+        </div>
+        <button class="btn primary" onclick="saveSettings()">Save Preferences</button>
+      </div>
+
+      <button class="btn" onclick="showScreen('setup')" style="margin-top:8px;">← Back to Session</button>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+const state = {
+  anthropicKey: '',
+  openaiKey: '',
+  bank: [],
+  currentScreen: 'setup',
+  session: {
+    active: false,
+    startTime: null,
+    length: 30,
+    content: '',
+    contentType: '',
+    focus: '',
+    currentSegment: null,
+    completedSegments: [],
+    flaggedItems: [],
+    sessionData: null, // generated session plan
+    comprehensionAnswers: [],
+    vocabUsed: [],
+    roleplayHistory: [],
+  },
+  prefs: {
+    level: 'tocfl3',
+    feedbackLang: 'english',
+  }
+};
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+function init() {
+  state.anthropicKey = localStorage.getItem('mc_anthropic_key') || '';
+  state.openaiKey = localStorage.getItem('mc_openai_key') || '';
+  state.bank = JSON.parse(localStorage.getItem('mc_bank') || '[]');
+  const prefs = JSON.parse(localStorage.getItem('mc_prefs') || '{}');
+  state.prefs = { ...state.prefs, ...prefs };
+
+  if (state.anthropicKey) document.getElementById('anthropic-key').value = state.anthropicKey;
+  if (state.openaiKey) document.getElementById('openai-key').value = state.openaiKey;
+  document.getElementById('pref-level').value = state.prefs.level;
+  document.getElementById('pref-feedback-lang').value = state.prefs.feedbackLang;
+
+  renderBank();
+  updateNavState();
+
+  if (!state.anthropicKey) {
+    showScreen('settings');
+    setTopbarTitle('Settings — add your API key to begin');
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  state.currentScreen = name;
+  updateNavState();
+}
+
+function updateNavState() {
+  const navIds = ['setup','warmup','comprehension','vocab','roleplay','review','bank','settings'];
+  navIds.forEach(id => {
+    const el = document.getElementById('nav-' + id);
+    if (!el) return;
+    el.classList.remove('active','completed');
+    if (id === state.currentScreen || (id === 'setup' && state.currentScreen === 'setup')) {
+      el.classList.add('active');
+    }
+    if (state.session.completedSegments.includes(id)) {
+      el.classList.add('completed');
+    }
+  });
+  const seg = state.currentScreen;
+  const navEl = document.getElementById('nav-' + seg);
+  if (navEl) navEl.classList.add('active');
+}
+
+function navToStep(step) {
+  if (!state.session.active && step !== 'setup') return;
+  showScreen(step);
+}
+
+function setTopbarTitle(msg) {
+  document.getElementById('topbar-title').innerHTML = msg;
+}
+
+// ═══════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════
+function saveSettings() {
+  state.anthropicKey = document.getElementById('anthropic-key').value.trim();
+  state.openaiKey = document.getElementById('openai-key').value.trim();
+  state.prefs.level = document.getElementById('pref-level').value;
+  state.prefs.feedbackLang = document.getElementById('pref-feedback-lang').value;
+  localStorage.setItem('mc_anthropic_key', state.anthropicKey);
+  localStorage.setItem('mc_openai_key', state.openaiKey);
+  localStorage.setItem('mc_prefs', JSON.stringify(state.prefs));
+  showScreen('setup');
+}
+
+// ═══════════════════════════════════════════════════
+// CHAR COUNTER
+// ═══════════════════════════════════════════════════
+const COUNTER_MAP = {
+  'yt-transcript':  { counter: 'yt-counter',      warning: 'yt-warning' },
+  'article-text':   { counter: 'article-counter',  warning: 'article-warning' },
+  'podcast-text':   { counter: 'podcast-counter',  warning: 'podcast-warning' },
+  'paste-text':     { counter: 'paste-counter',    warning: 'paste-warning' },
+};
+
+function updateCounter(textareaId, counterId) {
+  const textarea = document.getElementById(textareaId);
+  const counterEl = document.getElementById(counterId);
+  const ids = COUNTER_MAP[textareaId];
+  const warningEl = ids ? document.getElementById(ids.warning) : null;
+  if (!textarea || !counterEl) return;
+
+  const len = textarea.value.length;
+  counterEl.textContent = len.toLocaleString() + ' chars';
+  counterEl.className = 'char-count';
+
+  if (warningEl) {
+    warningEl.className = 'char-warning';
+    warningEl.textContent = '';
+  }
+
+  if (len === 0) return;
+
+  if (len <= 2000) {
+    counterEl.classList.add('ok');
+  } else if (len <= 3500) {
+    counterEl.classList.add('warn');
+    if (warningEl) {
+      warningEl.textContent = 'Good length — consider trimming to a focused excerpt';
+      warningEl.classList.add('visible');
+    }
+  } else {
+    counterEl.classList.add('over');
+    if (warningEl) {
+      warningEl.textContent = 'Long paste — Claude will truncate at 3,000 chars. Trim for better, cheaper sessions.';
+      warningEl.classList.add('visible', 'over');
+    }
+  }
+}
+
+
+function setSourceTab(tab) {
+  document.querySelectorAll('.source-tab').forEach((t,i) => {
+    t.classList.toggle('active', ['youtube','article','podcast','paste'][i] === tab);
+  });
+  document.querySelectorAll('.source-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('source-' + tab).classList.add('active');
+  state.session.contentType = tab;
+}
+
+async function fetchYouTubeTranscript() {
+  const url = document.getElementById('yt-url').value.trim();
+  if (!url) return;
+  const group = document.getElementById('yt-transcript-group');
+  const textarea = document.getElementById('yt-transcript');
+  group.style.display = 'block';
+  textarea.value = 'Fetching transcript...';
+
+  // Extract video ID
+  const match = url.match(/[?&]v=([^&]+)/) || url.match(/youtu\.be\/([^?]+)/);
+  if (!match) { textarea.value = ''; textarea.placeholder = 'Could not parse video ID — paste transcript manually.'; return; }
+  const videoId = match[1];
+
+  // Use a public transcript proxy
+  try {
+    const res = await fetch(`https://yt-transcript-proxy.vercel.app/api?videoId=${videoId}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.transcript) {
+        textarea.value = data.transcript;
+        updateCounter('yt-transcript', 'yt-counter');
+        return;
+      }
+    }
+  } catch(e) {}
+  textarea.value = '';
+  textarea.placeholder = 'Auto-fetch unavailable for this video (no CC subtitles, or region-blocked). Paste the transcript manually.';
+}
+
+async function fetchArticle() {
+  const url = document.getElementById('article-url').value.trim();
+  if (!url || !state.anthropicKey) return;
+  document.getElementById('article-text').value = 'Fetching...';
+  // We'll let Claude handle URL content in the session prompt
+  document.getElementById('article-text').value = '';
+  document.getElementById('article-text').placeholder = 'Article URL noted — Claude will read it during session generation.';
+}
+
+function handleAudioFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const drop = document.getElementById('audio-drop');
+  if (!state.openaiKey) {
+    drop.innerHTML = `<strong style="color:var(--accent)">${file.name}</strong> loaded<br><div class="hint" style="margin-top:6px;">No OpenAI key found. <a href="https://whisperapp.net" target="_blank">Whisper.app</a> or <a href="https://memo.ac" target="_blank">Memo.ac</a> can transcribe this for free — paste below.</div>`;
+    return;
+  }
+  drop.innerHTML = `<strong style="color:var(--green)">${file.name}</strong> — will transcribe with Whisper when session starts`;
+  state.session.audioFile = file;
+}
+
+// ═══════════════════════════════════════════════════
+// STRUGGLE BANK
+// ═══════════════════════════════════════════════════
+function addBankItem() {
+  const zh = document.getElementById('bank-zh').value.trim();
+  const en = document.getElementById('bank-en').value.trim();
+  if (!zh) return;
+  state.bank.push({ zh, en, addedAt: Date.now() });
+  localStorage.setItem('mc_bank', JSON.stringify(state.bank));
+  document.getElementById('bank-zh').value = '';
+  document.getElementById('bank-en').value = '';
+  renderBank();
+}
+
+function removeBankItem(index) {
+  state.bank.splice(index, 1);
+  localStorage.setItem('mc_bank', JSON.stringify(state.bank));
+  renderBank();
+}
+
+function renderBank() {
+  const list = document.getElementById('bank-list');
+  const empty = document.getElementById('bank-empty');
+  document.getElementById('bank-count').textContent = state.bank.length;
+  if (state.bank.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  list.innerHTML = state.bank.map((item, i) => `
+    <div class="bank-item">
+      <span class="zh">${item.zh}</span>
+      <span class="en">${item.en || ''}</span>
+      <span class="remove-bank" onclick="removeBankItem(${i})">✕</span>
+    </div>
+  `).join('');
+}
+
+function flagItem(zh, en) {
+  if (!state.bank.find(b => b.zh === zh)) {
+    state.bank.push({ zh, en, addedAt: Date.now() });
+    localStorage.setItem('mc_bank', JSON.stringify(state.bank));
+    renderBank();
+  }
+  if (!state.session.flaggedItems.find(f => f.zh === zh)) {
+    state.session.flaggedItems.push({ zh, en });
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// TIMER
+// ═══════════════════════════════════════════════════
+let timerInterval = null;
+
+function startTimer(minutes) {
+  const totalSeconds = minutes * 60;
+  const start = Date.now();
+  state.session.startTime = start;
+
+  timerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - start) / 1000);
+    const remaining = Math.max(0, totalSeconds - elapsed);
+    const m = Math.floor(remaining / 60).toString().padStart(2,'0');
+    const s = (remaining % 60).toString().padStart(2,'0');
+    document.getElementById('timer-display').textContent = `${m}:${s}`;
+    document.getElementById('timer-fill').style.width = `${(elapsed / totalSeconds) * 100}%`;
+    if (remaining === 0) clearInterval(timerInterval);
+  }, 1000);
+}
+
+// ═══════════════════════════════════════════════════
+// CLAUDE API
+// ═══════════════════════════════════════════════════
+async function callClaude(messages, systemPrompt, maxTokens = 1500) {
+  if (!state.anthropicKey) throw new Error('No Anthropic API key set.');
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: maxTokens,
+      system: systemPrompt,
+      messages,
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error?.message || 'API error');
+  }
+  const data = await res.json();
+  return data.content[0].text;
+}
+
+function getSystemPrompt() {
+  const bankItems = state.bank.length > 0
+    ? `\n\nStruggle Bank (vocab/grammar the student specifically struggles with — weave these into challenges where possible):\n${state.bank.map(b => `- ${b.zh}${b.en ? ` (${b.en})` : ''}`).join('\n')}`
+    : '';
+
+  return `You are an expert Taiwanese Mandarin coach. The student is a solid intermediate learner (TOCFL Level 3, studying for 7 years, targeting TOCFL Level 4). They live in Southern California but are relocating to Taipei and use Traditional Chinese characters exclusively.
+
+Your coaching priorities:
+- Vocabulary retention through contextual usage, not rote memorization
+- Speaking fluency and natural phrasing  
+- Listening comprehension
+- Grammar accuracy, especially particles, measure words, and connectives
+
+Always use Traditional Chinese characters (繁體字). Include pinyin only when explicitly asked. Keep challenges authentic — avoid overly textbook-style sentences.
+
+Feedback language: ${state.prefs.feedbackLang === 'english' ? 'English' : state.prefs.feedbackLang === 'chinese' ? 'Traditional Chinese' : 'Mixed (Chinese with English gloss)'}.${bankItems}`;
+}
+
+// ═══════════════════════════════════════════════════
+// SESSION START
+// ═══════════════════════════════════════════════════
+async function startSession() {
+  if (!state.anthropicKey) { showScreen('settings'); return; }
+
+  // Collect content
+  const tab = document.querySelector('.source-tab.active')?.textContent.toLowerCase() || 'paste';
+  let content = '';
+  let contentType = tab;
+
+  if (tab === 'youtube') {
+    content = document.getElementById('yt-transcript').value.trim();
+    if (!content) { alert('Please add a transcript (auto-fetch or paste manually).'); return; }
+  } else if (tab === 'article') {
+    content = document.getElementById('article-text').value.trim();
+    const url = document.getElementById('article-url').value.trim();
+    if (!content && url) content = `[Article URL: ${url} — please use this as the content source]`;
+    if (!content) { alert('Please paste article text or enter a URL.'); return; }
+  } else if (tab === 'podcast') {
+    content = document.getElementById('podcast-text').value.trim();
+    if (!content && state.session.audioFile && state.openaiKey) {
+      content = await transcribeWithWhisper(state.session.audioFile);
+    }
+    if (!content) { alert('Please paste a transcript, or upload audio with an OpenAI key.'); return; }
+  } else {
+    content = document.getElementById('paste-text').value.trim();
+    if (!content) { alert('Please paste some text.'); return; }
+  }
+
+  state.session.content = content;
+  state.session.focus = document.getElementById('session-focus').value.trim();
+  state.session.length = parseInt(document.getElementById('session-length').value);
+  state.session.active = true;
+  state.session.completedSegments = [];
+  state.session.flaggedItems = [];
+  state.session.comprehensionAnswers = [];
+  state.session.roleplayHistory = [];
+
+  startTimer(state.session.length);
+  showScreen('warmup');
+  setNavActive('warmup');
+  generateWarmup();
+}
+
+async function transcribeWithWhisper(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('model', 'whisper-1');
+  formData.append('language', 'zh');
+  const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${state.openaiKey}` },
+    body: formData,
+  });
+  const data = await res.json();
+  return data.text || '';
+}
+
+function setNavActive(step) {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('nav-' + step);
+  if (el) el.classList.add('active');
+  state.currentScreen = step;
+}
+
+// ═══════════════════════════════════════════════════
+// SEGMENT: WARM-UP
+// ═══════════════════════════════════════════════════
+async function generateWarmup() {
+  const container = document.getElementById('warmup-content');
+  const actions = document.getElementById('warmup-actions');
+
+  try {
+    const focusNote = state.session.focus ? `\nStudent's focus for this session: ${state.session.focus}` : '';
+    const prompt = `Here is the content for this session:\n\n${state.session.content.slice(0, 3000)}${focusNote}
+
+Generate a warm-up overview for this content. Include:
+1. A brief summary (3-4 sentences in English) of what the content is about
+2. 5 key vocabulary items from the content — for each give: Traditional Chinese, pinyin, English meaning, and one example sentence from or inspired by the text
+3. One grammar pattern that appears in the text that is worth studying
+
+Format with clear sections. Use Traditional Chinese throughout. This is the orientation before challenges begin.`;
+
+    const result = await callClaude([{ role: 'user', content: prompt }], getSystemPrompt(), 1200);
+
+    container.innerHTML = `
+      <div class="challenge-block">
+        <div class="card-title">Content Overview</div>
+        <div style="white-space: pre-wrap; line-height: 1.8; font-size: 14px; color: var(--text-dim);">${result}</div>
+      </div>
+    `;
+    actions.style.display = 'flex';
+    state.session.completedSegments.push('warmup');
+    updateNavState();
+    // Pre-generate comprehension in background
+    generateComprehension();
+  } catch(e) {
+    container.innerHTML = `<div class="status-bar error">Error: ${e.message}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// SEGMENT: COMPREHENSION
+// ═══════════════════════════════════════════════════
+let comprehensionData = null;
+
+async function generateComprehension() {
+  const focusNote = state.session.focus ? `\nStudent's focus: ${state.session.focus}` : '';
+  const bankNote = state.bank.length > 0
+    ? `\nStruggle bank items to incorporate: ${state.bank.slice(0,8).map(b=>b.zh).join('、')}`
+    : '';
+
+  const prompt = `Content:\n\n${state.session.content.slice(0, 3000)}${focusNote}${bankNote}
+
+Generate a comprehension challenge set. Return ONLY valid JSON, no markdown, no explanation:
+{
+  "questions": [
+    {
+      "type": "mc",
+      "zh": "question in Chinese",
+      "en": "English translation of question",
+      "options": ["option A in Chinese", "option B", "option C", "option D"],
+      "correct": 0,
+      "explanation": "brief English explanation of why"
+    },
+    {
+      "type": "open",
+      "zh": "open-ended question in Chinese",
+      "en": "English translation",
+      "sample": "a model answer in Chinese"
+    }
+  ]
+}
+
+Include 3 multiple choice and 2 open-ended questions. Make them genuinely test comprehension, not just surface facts.`;
+
+  try {
+    const result = await callClaude([{ role: 'user', content: prompt }], getSystemPrompt(), 1200);
+    const clean = result.replace(/```json|```/g, '').trim();
+    comprehensionData = JSON.parse(clean);
+  } catch(e) {
+    comprehensionData = null;
+  }
+}
+
+function goToSegment(name) {
+  showScreen(name);
+  setNavActive(name);
+  if (name === 'comprehension') renderComprehension();
+  if (name === 'vocab') renderVocab();
+  if (name === 'roleplay') renderRoleplay();
+  if (name === 'review') renderReview();
+}
+
+function renderComprehension() {
+  const container = document.getElementById('comprehension-content');
+  const actions = document.getElementById('comprehension-actions');
+
+  if (!comprehensionData) {
+    container.innerHTML = `<div class="status-bar"><div class="loading-dots"><span></span><span></span><span></span></div> Still generating — one moment...</div>`;
+    setTimeout(() => renderComprehension(), 2000);
+    return;
+  }
+
+  let html = '';
+  comprehensionData.questions.forEach((q, i) => {
+    if (q.type === 'mc') {
+      html += `
+        <div class="challenge-block" id="q-${i}">
+          <div class="card-title">Question ${i+1} — Multiple Choice</div>
+          <div class="challenge-text">${q.zh}</div>
+          <button class="show-english-btn" onclick="toggleEnglish('qen-${i}', this)">Show English</button>
+          <div class="challenge-english" id="qen-${i}">${q.en}</div>
+          <div class="mc-options">
+            ${q.options.map((opt, oi) => `
+              <button class="mc-option" onclick="answerMC(${i}, ${oi}, ${q.correct}, this, '${escapeAttr(q.explanation)}')">${opt}</button>
+            `).join('')}
+          </div>
+          <div class="feedback-block" id="fb-${i}"></div>
+          <button class="flag-btn" onclick="flagFromQuestion('${escapeAttr(q.zh)}', '${escapeAttr(q.en)}', this)">⚑ Flag for struggle bank</button>
+        </div>`;
+    } else {
+      html += `
+        <div class="challenge-block" id="q-${i}">
+          <div class="card-title">Question ${i+1} — Open Response</div>
+          <div class="challenge-text">${q.zh}</div>
+          <button class="show-english-btn" onclick="toggleEnglish('qen-${i}', this)">Show English</button>
+          <div class="challenge-english" id="qen-${i}">${q.en}</div>
+          <div class="response-area">
+            <textarea placeholder="Type your answer in Chinese..." id="ans-${i}" style="font-family:'Noto Serif TC',serif;font-size:16px;"></textarea>
+            <button class="mic-btn" onclick="toggleMic('ans-${i}', this)" title="Speak your answer">🎙</button>
+          </div>
+          <div class="action-row">
+            <button class="btn primary sm" onclick="submitOpenAnswer(${i}, '${escapeAttr(q.sample)}')">Check Answer</button>
+            <button class="flag-btn" onclick="flagFromQuestion('${escapeAttr(q.zh)}', '${escapeAttr(q.en)}', this)">⚑ Flag</button>
+          </div>
+          <div class="feedback-block" id="fb-${i}"></div>
+        </div>`;
+    }
+  });
+
+  container.innerHTML = html;
+  actions.style.display = 'flex';
+  state.session.completedSegments.push('comprehension');
+  updateNavState();
+  generateVocabChallenges();
+}
+
+function answerMC(qIndex, chosenIndex, correctIndex, btn, explanation) {
+  const block = document.getElementById('q-' + qIndex);
+  block.querySelectorAll('.mc-option').forEach((b, i) => {
+    b.disabled = true;
+    if (i === correctIndex) b.classList.add('correct');
+    else if (i === chosenIndex) b.classList.add('wrong');
+  });
+  const fb = document.getElementById('fb-' + qIndex);
+  const correct = chosenIndex === correctIndex;
+  fb.className = `feedback-block shown ${correct ? 'correct' : 'incorrect'}`;
+  fb.textContent = correct ? `✓ Correct. ${explanation}` : `✗ The correct answer was option ${correctIndex+1}. ${explanation}`;
+}
+
+async function submitOpenAnswer(qIndex, sample) {
+  const textarea = document.getElementById('ans-' + qIndex);
+  const answer = textarea.value.trim();
+  if (!answer) return;
+  const fb = document.getElementById('fb-' + qIndex);
+  fb.className = 'feedback-block shown neutral';
+  fb.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div> Evaluating...';
+
+  try {
+    const result = await callClaude([{
+      role: 'user',
+      content: `Student's answer: "${answer}"\nModel answer: "${sample}"\n\nBriefly evaluate the student's Chinese answer. Note what's correct, what could be improved grammatically or in terms of word choice. Keep it to 3-4 sentences. Be encouraging but honest.`
+    }], getSystemPrompt(), 400);
+    fb.textContent = result;
+  } catch(e) {
+    fb.textContent = `Model answer: ${sample}`;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// SEGMENT: VOCAB & GRAMMAR
+// ═══════════════════════════════════════════════════
+let vocabData = null;
+
+async function generateVocabChallenges() {
+  const bankNote = state.bank.length > 0
+    ? `\nStruggle bank items to prioritize: ${state.bank.map(b=>`${b.zh}${b.en?` (${b.en})`:''}`).join(', ')}`
+    : '';
+
+  const prompt = `Content:\n\n${state.session.content.slice(0, 2500)}${bankNote}
+
+Generate vocabulary and grammar usage challenges. Return ONLY valid JSON:
+{
+  "vocab": [
+    {"zh": "word", "pinyin": "pīnyīn", "en": "meaning", "example": "example sentence using the word"},
+    ...
+  ],
+  "grammarChallenge": {
+    "pattern": "grammar pattern name in English",
+    "zh_explanation": "brief explanation in Chinese",
+    "en_explanation": "brief explanation in English",
+    "example": "example sentence",
+    "exercise": "Fill in the blank or transformation exercise sentence with ___ for the blank",
+    "answer": "correct answer"
+  },
+  "sentenceChallenges": [
+    {"prompt": "Use [word] in a sentence about [topic]", "target_word": "word in Chinese", "hint": "optional usage hint in English"},
+    ...
+  ]
+}
+
+Include 6-8 vocab items (mixing content words and any struggle bank items), 1 grammar challenge, and 3 sentence production challenges.`;
+
+  try {
+    const result = await callClaude([{ role: 'user', content: prompt }], getSystemPrompt(), 1500);
+    const clean = result.replace(/```json|```/g, '').trim();
+    vocabData = JSON.parse(clean);
+  } catch(e) {
+    vocabData = null;
+  }
+}
+
+function renderVocab() {
+  const container = document.getElementById('vocab-content');
+  const actions = document.getElementById('vocab-actions');
+
+  if (!vocabData) {
+    container.innerHTML = `<div class="status-bar"><div class="loading-dots"><span></span><span></span><span></span></div> Generating vocab challenges...</div>`;
+    setTimeout(() => renderVocab(), 2000);
+    return;
+  }
+
+  let html = '';
+
+  // Vocab review cards
+  html += `
+    <div class="challenge-block">
+      <div class="card-title">Key Vocabulary — hover or click to reveal meaning</div>
+      <div class="vocab-grid">
+        ${vocabData.vocab.map(v => `
+          <div class="vocab-card" onclick="this.classList.toggle('selected')">
+            <div class="zh-word">${v.zh}</div>
+            <div class="pinyin">${v.pinyin}</div>
+            <div class="en-word">${v.en}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+
+  // Grammar challenge
+  const g = vocabData.grammarChallenge;
+  html += `
+    <div class="challenge-block">
+      <div class="card-title">Grammar Pattern — ${g.pattern}</div>
+      <div style="font-size:14px; color:var(--text-dim); margin-bottom:10px;">${g.en_explanation}</div>
+      <div class="challenge-text" style="font-size:17px;">${g.zh_explanation}</div>
+      <div style="margin: 10px 0; font-style:italic; color:var(--text-dim); font-size:14px;">Example: ${g.example}</div>
+      <hr class="divider">
+      <div style="font-size:14px; color:var(--text-dim); margin-bottom:8px;">Fill in the blank:</div>
+      <div class="challenge-text" style="font-size:18px;">${g.exercise}</div>
+      <div class="response-area">
+        <textarea id="grammar-ans" placeholder="Your answer..." style="font-family:'Noto Serif TC',serif;font-size:16px;min-height:50px;"></textarea>
+        <button class="mic-btn" onclick="toggleMic('grammar-ans', this)" title="Speak">🎙</button>
+      </div>
+      <div class="action-row">
+        <button class="btn primary sm" onclick="revealGrammarAnswer('${escapeAttr(g.answer)}')">Check</button>
+      </div>
+      <div class="feedback-block" id="grammar-fb"></div>
+    </div>`;
+
+  // Sentence challenges
+  html += `<div class="challenge-block">
+    <div class="card-title">Sentence Production</div>`;
+  vocabData.sentenceChallenges.forEach((sc, i) => {
+    html += `
+      <div style="margin-bottom:18px;">
+        <div style="font-size:14px; color:var(--text-dim); margin-bottom:4px;">${sc.prompt}</div>
+        ${sc.hint ? `<div class="hint" style="margin-bottom:8px;">Hint: ${sc.hint}</div>` : ''}
+        <div class="response-area">
+          <textarea id="sc-${i}" placeholder="Write your sentence in Chinese..." style="font-family:'Noto Serif TC',serif;font-size:16px;min-height:60px;"></textarea>
+          <button class="mic-btn" onclick="toggleMic('sc-${i}', this)" title="Speak">🎙</button>
+        </div>
+        <div class="action-row">
+          <button class="btn primary sm" onclick="evalSentence(${i}, '${escapeAttr(sc.target_word)}')">Evaluate</button>
+          <button class="flag-btn" id="scflag-${i}" onclick="flagItem('${escapeAttr(sc.target_word)}', ''); flagBtnActivate('scflag-${i}')">⚑ Flag ${sc.target_word}</button>
+        </div>
+        <div class="feedback-block" id="scfb-${i}"></div>
+      </div>`;
+  });
+  html += `</div>`;
+
+  container.innerHTML = html;
+  actions.style.display = 'flex';
+  state.session.completedSegments.push('vocab');
+  updateNavState();
+  generateRoleplayScenario();
+}
+
+function revealGrammarAnswer(answer) {
+  const userAns = document.getElementById('grammar-ans').value.trim();
+  const fb = document.getElementById('grammar-fb');
+  fb.className = 'feedback-block shown neutral';
+  fb.textContent = `Answer: ${answer}`;
+}
+
+async function evalSentence(index, targetWord) {
+  const textarea = document.getElementById('sc-' + index);
+  const answer = textarea.value.trim();
+  if (!answer) return;
+  const fb = document.getElementById('scfb-' + index);
+  fb.className = 'feedback-block shown neutral';
+  fb.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+
+  try {
+    const result = await callClaude([{
+      role: 'user',
+      content: `Student was asked to use the word "${targetWord}" in a sentence. They wrote: "${answer}"\n\nEvaluate briefly: Did they use the target word correctly? Is the sentence grammatically sound and natural? Any improvements? 2-3 sentences max.`
+    }], getSystemPrompt(), 300);
+    fb.textContent = result;
+  } catch(e) {
+    fb.className = 'feedback-block shown incorrect';
+    fb.textContent = 'Could not evaluate — check your API key.';
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// SEGMENT: ROLEPLAY
+// ═══════════════════════════════════════════════════
+let roleplayScenario = null;
+
+async function generateRoleplayScenario() {
+  const bankNote = state.bank.length > 0
+    ? `\nTarget vocab to weave in: ${state.bank.slice(0,6).map(b=>b.zh).join('、')}`
+    : '';
+  const focusNote = state.session.focus ? `\nStudent focus: ${state.session.focus}` : '';
+
+  const prompt = `Based on this content: "${state.session.content.slice(0, 1000)}"${bankNote}${focusNote}
+
+Create a short roleplay scenario in JSON. Return ONLY valid JSON:
+{
+  "scenario_en": "Brief scenario description in English (2 sentences)",
+  "scenario_zh": "場景描述 in Traditional Chinese",
+  "your_role": "Claude's character and role in this conversation",
+  "student_role": "What the student is playing",
+  "opening_line": "Claude's first line of dialogue in Traditional Chinese",
+  "opening_en": "English translation of opening line",
+  "vocab_targets": ["word1", "word2", "word3"]
+}`;
+
+  try {
+    const result = await callClaude([{ role: 'user', content: prompt }], getSystemPrompt(), 600);
+    const clean = result.replace(/```json|```/g, '').trim();
+    roleplayScenario = JSON.parse(clean);
+    state.session.roleplayHistory = [{
+      role: 'assistant',
+      content: roleplayScenario.opening_line,
+      en: roleplayScenario.opening_en
+    }];
+  } catch(e) {
+    roleplayScenario = null;
+  }
+}
+
+function renderRoleplay() {
+  const container = document.getElementById('roleplay-content');
+
+  if (!roleplayScenario) {
+    container.innerHTML = `<div class="status-bar"><div class="loading-dots"><span></span><span></span><span></span></div> Setting up scenario...</div>`;
+    setTimeout(() => renderRoleplay(), 2000);
+    return;
+  }
+
+  const vocabPills = (roleplayScenario.vocab_targets || []).map(v =>
+    `<span class="progress-pill"><span class="dot"></span>${v}</span>`
+  ).join(' ');
+
+  container.innerHTML = `
+    <div class="challenge-block" style="margin-bottom:16px;">
+      <div class="card-title">Scenario</div>
+      <div style="font-size:14px; color:var(--text-dim); margin-bottom:8px;">${roleplayScenario.scenario_en}</div>
+      <div class="challenge-text" style="font-size:17px;">${roleplayScenario.scenario_zh}</div>
+      <div style="margin-top:10px; font-size:13px; color:var(--text-dim);">
+        <strong style="color:var(--text);">You:</strong> ${roleplayScenario.student_role} &nbsp;|&nbsp;
+        <strong style="color:var(--text);">Coach:</strong> ${roleplayScenario.your_role}
+      </div>
+      ${vocabPills ? `<div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">${vocabPills}</div>` : ''}
+    </div>
+    <div class="convo-thread" id="convo-thread"></div>
+    <div class="response-area">
+      <textarea id="roleplay-input" placeholder="Respond in Chinese..." style="font-family:'Noto Serif TC',serif;font-size:16px;" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendRoleplayMessage();}"></textarea>
+      <button class="mic-btn" onclick="toggleMic('roleplay-input', this)" title="Speak">🎙</button>
+    </div>
+    <div class="action-row">
+      <button class="btn primary" onclick="sendRoleplayMessage()">Send →</button>
+      <button class="btn" onclick="goToSegment('review')">End Conversation → Review</button>
+    </div>
+    <div id="roleplay-feedback" class="feedback-block" style="margin-top:12px;"></div>
+  `;
+
+  renderThread();
+  state.session.completedSegments.push('roleplay');
+  updateNavState();
+}
+
+function renderThread() {
+  const thread = document.getElementById('convo-thread');
+  if (!thread) return;
+  thread.innerHTML = state.session.roleplayHistory.map(msg => `
+    <div class="message ${msg.role === 'user' ? 'user' : ''}">
+      <div class="message-avatar">${msg.role === 'user' ? '你' : '師'}</div>
+      <div class="message-bubble">
+        ${msg.content}
+        ${msg.en ? `<div class="message-en">${msg.en}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+  thread.scrollTop = thread.scrollHeight;
+}
+
+async function sendRoleplayMessage() {
+  const input = document.getElementById('roleplay-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  state.session.roleplayHistory.push({ role: 'user', content: text });
+  renderThread();
+
+  const fb = document.getElementById('roleplay-feedback');
+  fb.className = 'feedback-block shown neutral';
+  fb.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+
+  try {
+    const vocabTargets = roleplayScenario.vocab_targets?.join('、') || '';
+    const messages = state.session.roleplayHistory.map(m => ({
+      role: m.role,
+      content: m.content
+    }));
+
+    const sysAddition = `\n\nYou are playing: ${roleplayScenario.your_role}. Stay in character and respond naturally in Traditional Chinese. After your in-character response, add a brief OOC note in [brackets] in ${state.prefs.feedbackLang === 'english' ? 'English' : 'Chinese'} noting: (1) any grammar or word choice improvements for the student's last message, (2) whether they used any of these target vocab: ${vocabTargets}. Keep OOC note short — 1-2 sentences.`;
+
+    const result = await callClaude(messages, getSystemPrompt() + sysAddition, 500);
+
+    // Split in-character from OOC note
+    const oocMatch = result.match(/\[([^\]]+)\]/);
+    const inChar = result.replace(/\[([^\]]+)\]/, '').trim();
+    const oocNote = oocMatch ? oocMatch[1] : '';
+
+    state.session.roleplayHistory.push({ role: 'assistant', content: inChar });
+    renderThread();
+
+    if (oocNote) {
+      fb.className = 'feedback-block shown neutral';
+      fb.textContent = oocNote;
+    } else {
+      fb.className = 'feedback-block';
+    }
+  } catch(e) {
+    fb.className = 'feedback-block shown incorrect';
+    fb.textContent = 'Error: ' + e.message;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// SEGMENT: REVIEW
+// ═══════════════════════════════════════════════════
+function renderReview() {
+  const container = document.getElementById('review-content');
+  const elapsed = state.session.startTime ? Math.floor((Date.now() - state.session.startTime) / 60000) : 0;
+  const flagged = state.session.flaggedItems;
+
+  container.innerHTML = `
+    <div class="review-grid">
+      <div class="review-stat"><div class="num">${elapsed}m</div><div class="label">Session length</div></div>
+      <div class="review-stat"><div class="num">${state.session.completedSegments.length}</div><div class="label">Segments completed</div></div>
+      <div class="review-stat"><div class="num">${flagged.length}</div><div class="label">Items flagged today</div></div>
+      <div class="review-stat"><div class="num">${state.bank.length}</div><div class="label">Total in struggle bank</div></div>
+    </div>
+
+    ${flagged.length > 0 ? `
+      <div class="card">
+        <div class="card-title">Flagged This Session</div>
+        <div class="flagged-list">
+          ${flagged.map(f => `
+            <div class="flagged-item">
+              <span class="zh">${f.zh}</span>
+              <span class="en">${f.en || ''}</span>
+              <span class="added">+ added to bank</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    ` : ''}
+
+    <div class="card">
+      <div class="card-title">Next Steps</div>
+      <div style="font-size:14px; color:var(--text-dim); line-height:1.8;">
+        ${state.bank.length > 0
+          ? `Your struggle bank has <strong style="color:var(--text)">${state.bank.length} items</strong>. They'll be woven into your next session automatically.`
+          : `No items in your struggle bank yet. Flag words and patterns during sessions to build it up.`
+        }
+        <br>Come back for your next session and choose new content to keep building.
+      </div>
+    </div>
+
+    <div style="display:flex; gap:12px; margin-top:16px;">
+      <button class="btn primary" onclick="newSession()">New Session →</button>
+      <button class="btn" onclick="showScreen('bank')">Review Struggle Bank</button>
+    </div>
+  `;
+
+  state.session.completedSegments.push('review');
+  updateNavState();
+  clearInterval(timerInterval);
+}
+
+function newSession() {
+  state.session = {
+    active: false, startTime: null, length: 30, content: '', contentType: '',
+    focus: '', currentSegment: null, completedSegments: [], flaggedItems: [],
+    comprehensionAnswers: [], vocabUsed: [], roleplayHistory: [], sessionData: null,
+  };
+  comprehensionData = null;
+  vocabData = null;
+  roleplayScenario = null;
+  document.getElementById('timer-display').textContent = '00:00';
+  document.getElementById('timer-fill').style.width = '0%';
+  showScreen('setup');
+  updateNavState();
+}
+
+// ═══════════════════════════════════════════════════
+// MIC / STT
+// ═══════════════════════════════════════════════════
+let recognition = null;
+let activeMicBtn = null;
+let activeMicTarget = null;
+
+function toggleMic(targetId, btn) {
+  if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+    alert('Speech recognition is not supported in this browser. Try Chrome or Edge.');
+    return;
+  }
+
+  if (recognition && btn.classList.contains('recording')) {
+    recognition.stop();
+    return;
+  }
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'zh-TW';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  btn.classList.add('recording');
+  activeMicBtn = btn;
+  activeMicTarget = targetId;
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    const target = document.getElementById(targetId);
+    if (target) target.value = (target.value ? target.value + ' ' : '') + transcript;
+  };
+
+  recognition.onend = () => {
+    btn.classList.remove('recording');
+    recognition = null;
+  };
+
+  recognition.onerror = (e) => {
+    btn.classList.remove('recording');
+    if (e.error !== 'no-speech') console.warn('STT error:', e.error);
+  };
+
+  recognition.start();
+}
+
+// ═══════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════
+function toggleEnglish(id, btn) {
+  const el = document.getElementById(id);
+  const shown = el.classList.toggle('shown');
+  btn.textContent = shown ? 'Hide English' : 'Show English';
+}
+
+function flagFromQuestion(zh, en, btn) {
+  flagItem(zh, en);
+  btn.classList.add('flagged');
+  btn.textContent = '⚑ Flagged';
+}
+
+function flagBtnActivate(id) {
+  const el = document.getElementById(id);
+  if (el) { el.classList.add('flagged'); el.textContent = '⚑ Flagged'; }
+}
+
+function escapeAttr(str) {
+  return (str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, ' ');
+}
+
+// ═══════════════════════════════════════════════════
+// PWA — MANIFEST + ICON GENERATION
+// ═══════════════════════════════════════════════════
+function generateIconDataURL(size) {
+  const canvas = document.createElement('canvas');
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const r = size * 0.18;
+  ctx.fillStyle = '#1a1714';
+  roundRect(ctx, 0, 0, size, size, r); ctx.fill();
+  ctx.strokeStyle = '#3d3730';
+  ctx.lineWidth = size * 0.005;
+  roundRect(ctx, size*0.02, size*0.02, size*0.96, size*0.96, r*0.92); ctx.stroke();
+  const cx = size/2, cy = size*0.42, s = size*0.21;
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(Math.PI/4);
+  ctx.strokeStyle = 'rgba(201,146,74,0.85)'; ctx.lineWidth = size*0.01;
+  roundRect(ctx, -s, -s, s*2, s*2, size*0.025); ctx.stroke(); ctx.restore();
+  const barW=[s*0.9,s*1.2,s*0.9], barOp=[1,0.7,0.4], barY=[cy-s*0.32,cy-s*0.06,cy+s*0.2];
+  barW.forEach((w,i)=>{ ctx.fillStyle=`rgba(201,146,74,${barOp[i]})`; roundRect(ctx,cx-w/2,barY[i]-size*0.015,w,size*0.03,size*0.008); ctx.fill(); });
+  const dotR=size*0.012, dotD=s*1.23;
+  [[0,-dotD],[dotD,0],[0,dotD],[-dotD,0]].forEach(([dx,dy],i)=>{ ctx.beginPath(); ctx.arc(cx+dx,cy+dy,dotR,0,Math.PI*2); ctx.fillStyle=i%2===0?'rgba(201,146,74,0.55)':'rgba(201,146,74,0.4)'; ctx.fill(); });
+  ctx.fillStyle='rgba(201,146,74,0.9)';
+  ctx.font=`600 ${size*0.22}px "Noto Serif TC",serif`;
+  ctx.textAlign='center'; ctx.textBaseline='bottom';
+  ctx.fillText('練', cx, size*0.91);
+  return canvas.toDataURL('image/png');
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+
+function initPWA() {
+  const icon192 = generateIconDataURL(192);
+  const icon512 = generateIconDataURL(512);
+  document.getElementById('apple-touch-icon').href = icon512;
+
+  // Favicon from canvas
+  const fav = document.createElement('link');
+  fav.rel='icon'; fav.type='image/png'; fav.href=generateIconDataURL(64);
+  document.head.appendChild(fav);
+
+  // Register service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════
+init();
+initPWA();
+</script>
+</body>
+</html>

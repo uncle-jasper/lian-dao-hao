@@ -1,0 +1,20 @@
+<svg width="192" height="192" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
+  <rect x="0" y="0" width="192" height="192" rx="35" fill="#1a1714"/>
+  <rect x="4" y="4" width="184" height="184" rx="31" fill="none" stroke="#3d3730" stroke-width="1"/>
+  <g transform="translate(96, 80)">
+    <rect x="-37" y="-37" width="74" height="74" rx="4"
+          transform="rotate(45)"
+          fill="none" stroke="#c9924a" stroke-width="2" opacity="0.85"/>
+    <rect x="-16" y="-17" width="32" height="6" rx="2" fill="#c9924a" opacity="1"/>
+    <rect x="-21" y="-5" width="42" height="6" rx="2" fill="#c9924a" opacity="0.7"/>
+    <rect x="-16" y="8" width="32" height="6" rx="2" fill="#c9924a" opacity="0.4"/>
+    <circle cx="0" cy="-43" r="2.5" fill="#c9924a" opacity="0.55"/>
+    <circle cx="43" cy="0" r="2.5" fill="#c9924a" opacity="0.4"/>
+    <circle cx="0" cy="43" r="2.5" fill="#c9924a" opacity="0.55"/>
+    <circle cx="-43" cy="0" r="2.5" fill="#c9924a" opacity="0.4"/>
+  </g>
+  <text x="96" y="168" text-anchor="middle"
+        font-family="'Noto Serif TC', 'Source Han Serif TC', serif"
+        font-size="40" font-weight="600"
+        fill="#c9924a" opacity="0.9">練</text>
+</svg>
