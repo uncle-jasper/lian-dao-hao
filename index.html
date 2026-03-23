@@ -725,6 +725,52 @@
     border-bottom: 1px solid var(--border);
   }
 
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before { content: '▸ '; }
+  details[open] summary::before { content: '▾ '; }
+
+  .deploy-step {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .deploy-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--accent-glow);
+    border: 1px solid var(--accent-dim);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .deploy-body { flex: 1; }
+  .deploy-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+  .deploy-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .deploy-desc code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: var(--bg3);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--accent);
+  }
+  .deploy-desc a { color: var(--accent-dim); text-decoration: none; }
+  .deploy-desc a:hover { color: var(--accent); text-decoration: underline; }
+
   .loading-dots {
     display: inline-flex;
     gap: 4px;
@@ -912,15 +958,19 @@
               <input type="text" id="yt-url" placeholder="https://www.youtube.com/watch?v=...">
               <button class="btn" onclick="fetchYouTubeTranscript()">Fetch</button>
             </div>
-            <div class="hint">App will attempt to pull CC subtitles. Hard-coded subs cannot be auto-extracted.</div>
+            <div class="hint" id="yt-fetch-hint">
+              Fetches Traditional Chinese CC subtitles via your configured Worker.
+              <span id="yt-no-worker" style="color:var(--accent);display:none;"> — <a href="#" onclick="showScreen('settings');return false;">Configure Worker in Settings</a> to enable.</span>
+            </div>
           </div>
           <div class="input-group" id="yt-transcript-group" style="display:none">
-            <label class="input-label">Transcript (auto-fetched or paste manually)</label>
-            <textarea id="yt-transcript" placeholder="Paste transcript here if auto-fetch fails..." oninput="updateCounter('yt-transcript','yt-counter')"></textarea>
+            <label class="input-label">Transcript</label>
+            <textarea id="yt-transcript" placeholder="Paste transcript here if fetch fails..." oninput="updateCounter('yt-transcript','yt-counter')"></textarea>
             <div class="char-counter">
               <span class="char-count" id="yt-counter">0 chars</span>
               <span class="char-warning" id="yt-warning"></span>
             </div>
+            <div class="hint" id="yt-lang-note" style="display:none;color:var(--text-dim);margin-top:4px;"></div>
           </div>
         </div>
 
@@ -1116,7 +1166,66 @@
       </div>
 
       <div class="card">
-        <div class="settings-title">Preferences</div>
+        <div class="settings-title">YouTube Transcript Worker</div>
+        <div class="input-group">
+          <label class="input-label">Cloudflare Worker URL</label>
+          <div class="input-row">
+            <input type="text" id="worker-url" placeholder="https://your-worker.yourname.workers.dev">
+            <button class="btn" onclick="testWorker()">Test</button>
+          </div>
+          <div style="margin-top:6px;" id="worker-status"></div>
+          <div class="hint">Enables one-click YouTube transcript fetching with Traditional Chinese support via Supadata.</div>
+        </div>
+
+        <details style="margin-top:12px;">
+          <summary style="font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--accent);cursor:pointer;user-select:none;">Setup Guide — Deploy in ~5 minutes</summary>
+          <div style="margin-top:14px;display:flex;flex-direction:column;gap:14px;">
+
+            <div class="deploy-step">
+              <div class="deploy-num">1</div>
+              <div class="deploy-body">
+                <div class="deploy-title">Get a Supadata API key</div>
+                <div class="deploy-desc">Go to <a href="https://supadata.ai" target="_blank">supadata.ai</a> and create a free account. Free tier includes 100 transcript requests — plenty for personal use. Copy your API key from the dashboard.</div>
+              </div>
+            </div>
+
+            <div class="deploy-step">
+              <div class="deploy-num">2</div>
+              <div class="deploy-body">
+                <div class="deploy-title">Create a new Cloudflare Worker</div>
+                <div class="deploy-desc">Go to <a href="https://dash.cloudflare.com" target="_blank">dash.cloudflare.com</a> → Workers & Pages → Create → Create Worker. Give it a name like <code>lian-dao-hao-transcript</code>. Click Deploy.</div>
+              </div>
+            </div>
+
+            <div class="deploy-step">
+              <div class="deploy-num">3</div>
+              <div class="deploy-body">
+                <div class="deploy-title">Paste the Worker code</div>
+                <div class="deploy-desc">Click Edit code. Delete everything in the editor and paste the contents of <code>worker.js</code> from your repo. Click Deploy.</div>
+              </div>
+            </div>
+
+            <div class="deploy-step">
+              <div class="deploy-num">4</div>
+              <div class="deploy-body">
+                <div class="deploy-title">Add your Supadata API key</div>
+                <div class="deploy-desc">In your Worker's settings, go to Settings → Variables → Add variable. Name: <code>SUPADATA_API_KEY</code>, Value: your Supadata key. Click Save and deploy.</div>
+              </div>
+            </div>
+
+            <div class="deploy-step">
+              <div class="deploy-num">5</div>
+              <div class="deploy-body">
+                <div class="deploy-title">Paste your Worker URL here</div>
+                <div class="deploy-desc">Your Worker URL is shown at the top of the Worker dashboard — looks like <code>https://lian-dao-hao-transcript.yourname.workers.dev</code>. Paste it in the field above and click Test.</div>
+              </div>
+            </div>
+
+          </div>
+        </details>
+
+        <button class="btn primary" onclick="saveSettings()" style="margin-top:16px;">Save</button>
+      </div>
         <div class="input-group">
           <label class="input-label">Your current level</label>
           <select id="pref-level">
@@ -1179,6 +1288,7 @@ const state = {
     level: 'tocfl3',
     feedbackLang: 'english',
     efficientMode: true,
+    workerUrl: '',
   }
 };
 
@@ -1197,7 +1307,9 @@ function init() {
   document.getElementById('pref-level').value = state.prefs.level;
   document.getElementById('pref-feedback-lang').value = state.prefs.feedbackLang;
   document.getElementById('pref-efficient').checked = state.prefs.efficientMode;
+  if (state.prefs.workerUrl) document.getElementById('worker-url').value = state.prefs.workerUrl;
   updateModePill();
+  updateWorkerStatus('idle');
 
   renderBank();
   updateNavState();
@@ -1254,6 +1366,7 @@ function saveSettings() {
   state.prefs.level = document.getElementById('pref-level').value;
   state.prefs.feedbackLang = document.getElementById('pref-feedback-lang').value;
   state.prefs.efficientMode = document.getElementById('pref-efficient').checked;
+  state.prefs.workerUrl = document.getElementById('worker-url').value.trim().replace(/\/$/, '');
   localStorage.setItem('mc_anthropic_key', state.anthropicKey);
   localStorage.setItem('mc_openai_key', state.openaiKey);
   localStorage.setItem('mc_prefs', JSON.stringify(state.prefs));
@@ -1357,35 +1470,94 @@ function setSourceTab(tab) {
   document.querySelectorAll('.source-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('source-' + tab).classList.add('active');
   state.session.contentType = tab;
+
+  // Show worker nudge on YouTube tab if not configured
+  const noWorker = document.getElementById('yt-no-worker');
+  if (noWorker) noWorker.style.display = (!state.prefs.workerUrl && tab === 'youtube') ? 'inline' : 'none';
 }
 
 async function fetchYouTubeTranscript() {
   const url = document.getElementById('yt-url').value.trim();
   if (!url) return;
+
   const group = document.getElementById('yt-transcript-group');
   const textarea = document.getElementById('yt-transcript');
   group.style.display = 'block';
-  textarea.value = 'Fetching transcript...';
 
-  // Extract video ID
-  const match = url.match(/[?&]v=([^&]+)/) || url.match(/youtu\.be\/([^?]+)/);
-  if (!match) { textarea.value = ''; textarea.placeholder = 'Could not parse video ID — paste transcript manually.'; return; }
-  const videoId = match[1];
+  if (!state.prefs.workerUrl) {
+    textarea.value = '';
+    textarea.placeholder = 'No Worker URL configured — go to Settings to set up YouTube transcript fetching, or paste transcript manually.';
+    return;
+  }
 
-  // Use a public transcript proxy
+  textarea.value = '';
+  textarea.placeholder = 'Fetching transcript…';
+
   try {
-    const res = await fetch(`https://yt-transcript-proxy.vercel.app/api?videoId=${videoId}`);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.transcript) {
-        textarea.value = data.transcript;
-        updateCounter('yt-transcript', 'yt-counter');
-        return;
+    const res = await fetch(`${state.prefs.workerUrl}/transcript?url=${encodeURIComponent(url)}`);
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      textarea.value = '';
+      textarea.placeholder = `Could not fetch: ${data.error || 'Unknown error'} — paste transcript manually.`;
+      return;
+    }
+
+    textarea.value = data.transcript || '';
+    updateCounter('yt-transcript', 'yt-counter');
+
+    // Show language note if zh-TW wasn't available
+    if (data.note) {
+      const noteEl = document.getElementById('yt-warning');
+      if (noteEl) {
+        noteEl.textContent = `⚠ ${data.note}`;
+        noteEl.classList.add('visible');
       }
     }
-  } catch(e) {}
-  textarea.value = '';
-  textarea.placeholder = 'Auto-fetch unavailable for this video (no CC subtitles, or region-blocked). Paste the transcript manually.';
+
+    // Show available languages if useful
+    if (data.availableLangs && data.availableLangs.length > 1) {
+      const noteEl = document.getElementById('yt-lang-note');
+      if (noteEl) {
+        noteEl.textContent = `Available languages: ${data.availableLangs.join(', ')}`;
+        noteEl.style.display = 'block';
+      }
+    }
+
+  } catch(e) {
+    textarea.value = '';
+    textarea.placeholder = `Fetch failed: ${e.message} — paste transcript manually.`;
+  }
+}
+
+async function testWorker() {
+  const url = document.getElementById('worker-url').value.trim().replace(/\/$/, '');
+  if (!url) { updateWorkerStatus('error', 'Enter a Worker URL first'); return; }
+  updateWorkerStatus('testing');
+  try {
+    const res = await fetch(`${url}/ping`);
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      updateWorkerStatus('ok', 'Connected');
+    } else {
+      updateWorkerStatus('error', 'Worker responded but returned an error');
+    }
+  } catch(e) {
+    updateWorkerStatus('error', 'Could not reach Worker — check the URL');
+  }
+}
+
+function updateWorkerStatus(state, msg) {
+  const el = document.getElementById('worker-status');
+  if (!el) return;
+  const states = {
+    idle:    { dot: '#5a5048', text: 'Not tested', color: 'var(--text-muted)' },
+    testing: { dot: '#c9924a', text: 'Testing…',   color: 'var(--accent)' },
+    ok:      { dot: '#7ab87a', text: msg || 'Connected', color: 'var(--green)' },
+    error:   { dot: '#c47a6a', text: msg || 'Error',     color: 'var(--red)' },
+  };
+  const s = states[state] || states.idle;
+  el.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${s.dot};margin-right:6px;vertical-align:middle;"></span><span style="color:${s.color};font-family:'JetBrains Mono',monospace;font-size:11px;">${s.text}</span>`;
 }
 
 async function fetchArticle() {
