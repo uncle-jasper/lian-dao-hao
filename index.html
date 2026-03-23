@@ -1132,6 +1132,16 @@
             <option value="mixed">Mixed (Chinese with English gloss)</option>
           </select>
         </div>
+        <div class="input-group">
+          <label class="input-label" style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="pref-efficient" style="width:auto;accent-color:var(--accent);">
+            <span>Efficient mode <span style="color:var(--text-muted);font-style:italic;">(recommended)</span></span>
+          </label>
+          <div class="hint" style="margin-top:6px;">
+            Keeps sessions to ~$0.04–0.05. Enforces 8-turn roleplay cap, shows model answers locally instead of calling Claude for sentence and open-answer evaluation, and tightens content truncation to 1,500 chars.
+            Disable for full Claude feedback on every response.
+          </div>
+        </div>
         <button class="btn primary" onclick="saveSettings()">Save Preferences</button>
       </div>
 
@@ -1168,6 +1178,7 @@ const state = {
   prefs: {
     level: 'tocfl3',
     feedbackLang: 'english',
+    efficientMode: true,
   }
 };
 
@@ -1185,6 +1196,8 @@ function init() {
   if (state.openaiKey) document.getElementById('openai-key').value = state.openaiKey;
   document.getElementById('pref-level').value = state.prefs.level;
   document.getElementById('pref-feedback-lang').value = state.prefs.feedbackLang;
+  document.getElementById('pref-efficient').checked = state.prefs.efficientMode;
+  updateModePill();
 
   renderBank();
   updateNavState();
@@ -1240,10 +1253,45 @@ function saveSettings() {
   state.openaiKey = document.getElementById('openai-key').value.trim();
   state.prefs.level = document.getElementById('pref-level').value;
   state.prefs.feedbackLang = document.getElementById('pref-feedback-lang').value;
+  state.prefs.efficientMode = document.getElementById('pref-efficient').checked;
   localStorage.setItem('mc_anthropic_key', state.anthropicKey);
   localStorage.setItem('mc_openai_key', state.openaiKey);
   localStorage.setItem('mc_prefs', JSON.stringify(state.prefs));
+  updateModePill();
   showScreen('setup');
+}
+
+function updateModePill() {
+  let pill = document.getElementById('mode-pill');
+  if (!pill) {
+    pill = document.createElement('div');
+    pill.id = 'mode-pill';
+    pill.style.cssText = 'font-family:"JetBrains Mono",monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;padding:3px 9px;border-radius:4px;border:1px solid;cursor:pointer;transition:all 0.15s;white-space:nowrap;';
+    pill.onclick = () => {
+      state.prefs.efficientMode = !state.prefs.efficientMode;
+      document.getElementById('pref-efficient').checked = state.prefs.efficientMode;
+      localStorage.setItem('mc_prefs', JSON.stringify(state.prefs));
+      updateModePill();
+    };
+    document.getElementById('topbar-actions').prepend(pill);
+  }
+  if (state.prefs.efficientMode) {
+    pill.textContent = '⬡ Efficient';
+    pill.style.color = 'var(--green)';
+    pill.style.borderColor = 'rgba(122,184,122,0.35)';
+    pill.style.background = 'rgba(122,184,122,0.08)';
+    pill.title = 'Efficient mode on — click to disable';
+  } else {
+    pill.textContent = '⬡ Full';
+    pill.style.color = 'var(--text-muted)';
+    pill.style.borderColor = 'var(--border)';
+    pill.style.background = 'transparent';
+    pill.title = 'Full mode — all API calls enabled. Click to enable efficient mode.';
+  }
+}
+
+function contentLimit() {
+  return state.prefs.efficientMode ? 1500 : 3000;
 }
 
 // ═══════════════════════════════════════════════════
@@ -1274,18 +1322,28 @@ function updateCounter(textareaId, counterId) {
 
   if (len === 0) return;
 
-  if (len <= 2000) {
+  const efficient = state.prefs.efficientMode;
+  const goodLimit = efficient ? 1000 : 2000;
+  const warnLimit = efficient ? 1500 : 3500;
+  const warnMsg = efficient
+    ? 'Getting long for efficient mode — trim to under 1,000 chars for best results'
+    : 'Good length — consider trimming to a focused excerpt';
+  const overMsg = efficient
+    ? `Over efficient mode limit — Claude will truncate at 1,500 chars. Trim for cheaper sessions.`
+    : 'Long paste — Claude will truncate at 3,000 chars. Trim for better, cheaper sessions.';
+
+  if (len <= goodLimit) {
     counterEl.classList.add('ok');
-  } else if (len <= 3500) {
+  } else if (len <= warnLimit) {
     counterEl.classList.add('warn');
     if (warningEl) {
-      warningEl.textContent = 'Good length — consider trimming to a focused excerpt';
+      warningEl.textContent = warnMsg;
       warningEl.classList.add('visible');
     }
   } else {
     counterEl.classList.add('over');
     if (warningEl) {
-      warningEl.textContent = 'Long paste — Claude will truncate at 3,000 chars. Trim for better, cheaper sessions.';
+      warningEl.textContent = overMsg;
       warningEl.classList.add('visible', 'over');
     }
   }
@@ -1539,7 +1597,7 @@ async function generateWarmup() {
 
   try {
     const focusNote = state.session.focus ? `\nStudent's focus for this session: ${state.session.focus}` : '';
-    const prompt = `Here is the content for this session:\n\n${state.session.content.slice(0, 3000)}${focusNote}
+    const prompt = `Here is the content for this session:\n\n${state.session.content.slice(0, contentLimit())}${focusNote}
 
 Generate a warm-up overview for this content. Include:
 1. A brief summary (3-4 sentences in English) of what the content is about
@@ -1577,7 +1635,7 @@ async function generateComprehension() {
     ? `\nStruggle bank items to incorporate: ${state.bank.slice(0,8).map(b=>b.zh).join('、')}`
     : '';
 
-  const prompt = `Content:\n\n${state.session.content.slice(0, 3000)}${focusNote}${bankNote}
+  const prompt = `Content:\n\n${state.session.content.slice(0, contentLimit())}${focusNote}${bankNote}
 
 Generate a comprehension challenge set. Return ONLY valid JSON, no markdown, no explanation:
 {
@@ -1691,9 +1749,15 @@ async function submitOpenAnswer(qIndex, sample) {
   const answer = textarea.value.trim();
   if (!answer) return;
   const fb = document.getElementById('fb-' + qIndex);
+
+  if (state.prefs.efficientMode) {
+    fb.className = 'feedback-block shown neutral';
+    fb.textContent = `Model answer: ${sample}`;
+    return;
+  }
+
   fb.className = 'feedback-block shown neutral';
   fb.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div> Evaluating...';
-
   try {
     const result = await callClaude([{
       role: 'user',
@@ -1715,7 +1779,7 @@ async function generateVocabChallenges() {
     ? `\nStruggle bank items to prioritize: ${state.bank.map(b=>`${b.zh}${b.en?` (${b.en})`:''}`).join(', ')}`
     : '';
 
-  const prompt = `Content:\n\n${state.session.content.slice(0, 2500)}${bankNote}
+  const prompt = `Content:\n\n${state.session.content.slice(0, contentLimit())}${bankNote}
 
 Generate vocabulary and grammar usage challenges. Return ONLY valid JSON:
 {
@@ -1836,9 +1900,15 @@ async function evalSentence(index, targetWord) {
   const answer = textarea.value.trim();
   if (!answer) return;
   const fb = document.getElementById('scfb-' + index);
+
+  if (state.prefs.efficientMode) {
+    fb.className = 'feedback-block shown neutral';
+    fb.textContent = `Self-check: Did you use ${targetWord} correctly and naturally? Switch to Full mode for Claude's feedback.`;
+    return;
+  }
+
   fb.className = 'feedback-block shown neutral';
   fb.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
-
   try {
     const result = await callClaude([{
       role: 'user',
@@ -1862,7 +1932,7 @@ async function generateRoleplayScenario() {
     : '';
   const focusNote = state.session.focus ? `\nStudent focus: ${state.session.focus}` : '';
 
-  const prompt = `Based on this content: "${state.session.content.slice(0, 1000)}"${bankNote}${focusNote}
+  const prompt = `Based on this content: "${state.session.content.slice(0, Math.floor(contentLimit()/3))}"${bankNote}${focusNote}
 
 Create a short roleplay scenario in JSON. Return ONLY valid JSON:
 {
@@ -1949,6 +2019,17 @@ async function sendRoleplayMessage() {
   const input = document.getElementById('roleplay-input');
   const text = input.value.trim();
   if (!text) return;
+
+  // Efficient mode: hard cap at 8 user turns
+  const userTurns = state.session.roleplayHistory.filter(m => m.role === 'user').length;
+  if (state.prefs.efficientMode && userTurns >= 8) {
+    const fb = document.getElementById('roleplay-feedback');
+    fb.className = 'feedback-block shown neutral';
+    fb.textContent = 'Efficient mode: 8-turn limit reached. Head to Review, or switch to Full mode to keep going.';
+    input.disabled = true;
+    document.querySelector('[onclick="sendRoleplayMessage()"]').disabled = true;
+    return;
+  }
   input.value = '';
 
   state.session.roleplayHistory.push({ role: 'user', content: text });
