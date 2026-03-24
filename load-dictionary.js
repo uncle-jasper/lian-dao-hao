@@ -1,33 +1,22 @@
 #!/usr/bin/env node
 // 練到好 — CC-CEDICT Dictionary Loader
-// Run once to upload CC-CEDICT into Cloudflare KV.
+// Uploads CC-CEDICT into your Cloudflare KV namespace.
+// Run once. Safe to commit to GitHub — no secrets in this file.
 //
-// Prerequisites:
-//   npm install node-fetch
-//
-// Setup:
-//   1. In Cloudflare dashboard → Workers & Pages → KV
-//      Create a namespace called "CEDICT" — copy its Namespace ID
-//   2. In your Worker settings → Settings → Bindings → KV Namespaces
-//      Add binding: Variable name = CEDICT, KV Namespace = the one you just created
-//   3. Get your Cloudflare Account ID from the dashboard sidebar
-//   4. Create a Cloudflare API token with "Workers KV Storage:Edit" permission
-//      at dash.cloudflare.com/profile/api-tokens
-//   5. Fill in the four constants below and run:
-//      node load-dictionary.js
+// Usage:
+//   CF_ACCOUNT_ID=xxx CF_API_TOKEN=xxx CF_KV_ID=xxx node load-dictionary.js
 
-const CLOUDFLARE_ACCOUNT_ID = 'YOUR_ACCOUNT_ID';
-const CLOUDFLARE_API_TOKEN  = 'YOUR_API_TOKEN';
-const KV_NAMESPACE_ID       = 'YOUR_KV_NAMESPACE_ID'; // The CEDICT namespace ID
+const CLOUDFLARE_ACCOUNT_ID = process.env.CF_ACCOUNT_ID;
+const CLOUDFLARE_API_TOKEN  = process.env.CF_API_TOKEN;
+const KV_NAMESPACE_ID       = process.env.CF_KV_ID;
 const CEDICT_URL            = 'https://www.mdbg.net/chinese/export/cedict/cedict_1_0_ts_utf-8_mdbg.txt.gz';
 
 // ─────────────────────────────────────────────────────────────────
-// You shouldn't need to edit below this line
+// No edits needed below this line
 // ─────────────────────────────────────────────────────────────────
 
 const https = require('https');
 const zlib  = require('zlib');
-const { Readable } = require('stream');
 
 const KV_BASE = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces/${KV_NAMESPACE_ID}`;
 const HEADERS = {
@@ -35,8 +24,6 @@ const HEADERS = {
   'Content-Type': 'application/json',
 };
 
-// Parse a CC-CEDICT line:
-// Traditional Simplified [pin1 yin1] /def1/def2/
 function parseLine(line) {
   if (!line || line.startsWith('#')) return null;
   const m = line.match(/^(\S+)\s+(\S+)\s+\[([^\]]+)\]\s+\/(.+)\/\s*$/);
@@ -46,7 +33,6 @@ function parseLine(line) {
   return { trad, simp, pinyin, defs };
 }
 
-// Pick the most useful short example from defs — prefer shorter ones
 function pickExample(defs) {
   return defs.find(d => d.includes('，') || d.includes('。') || d.length > 15) || defs[0] || '';
 }
@@ -61,9 +47,8 @@ async function downloadAndParse() {
       gunzip.on('data', chunk => chunks.push(chunk));
       gunzip.on('end', () => {
         const text = Buffer.concat(chunks).toString('utf8');
-        const lines = text.split('\n');
         const entries = [];
-        for (const line of lines) {
+        for (const line of text.split('\n')) {
           const parsed = parseLine(line.trim());
           if (parsed) entries.push(parsed);
         }
@@ -76,7 +61,6 @@ async function downloadAndParse() {
 }
 
 async function kvBulkWrite(pairs) {
-  // Cloudflare KV bulk write: max 10,000 per request, max 100MB
   const BATCH = 5000;
   for (let i = 0; i < pairs.length; i += BATCH) {
     const batch = pairs.slice(i, i + BATCH);
@@ -85,9 +69,9 @@ async function kvBulkWrite(pairs) {
       headers: HEADERS,
       body: JSON.stringify(batch),
     });
-    const json = await res.json();
-    if (!json.success) {
-      console.error('KV write error:', JSON.stringify(json.errors));
+    const data = await res.json();
+    if (!data.success) {
+      console.error('KV write error:', JSON.stringify(data.errors));
       throw new Error('KV write failed');
     }
     console.log(`  Uploaded ${Math.min(i + BATCH, pairs.length)} / ${pairs.length}`);
@@ -95,39 +79,38 @@ async function kvBulkWrite(pairs) {
 }
 
 async function main() {
-  if (CLOUDFLARE_ACCOUNT_ID === 'YOUR_ACCOUNT_ID') {
-    console.error('Please fill in the four constants at the top of this file.');
+  if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_API_TOKEN || !KV_NAMESPACE_ID) {
+    console.error(`
+Missing environment variables. Run like this:
+
+  CF_ACCOUNT_ID=your_account_id \\
+  CF_API_TOKEN=your_api_token \\
+  CF_KV_ID=your_kv_namespace_id \\
+  node load-dictionary.js
+    `);
     process.exit(1);
   }
 
   const entries = await downloadAndParse();
 
-  // Build KV pairs keyed by Traditional Chinese
   const kvPairs = [];
-  const tradIndex = {}; // For words with multiple entries
+  const tradIndex = {};
 
   for (const e of entries) {
     const value = {
       pinyin: e.pinyin,
-      defs: e.defs.slice(0, 5), // keep top 5 definitions
+      defs: e.defs.slice(0, 5),
       example: pickExample(e.defs),
       simp: e.simp,
     };
-
-    // Key by traditional
     kvPairs.push({ key: e.trad, value: JSON.stringify(value) });
-
-    // Also key by simplified if different
     if (e.simp !== e.trad) {
       kvPairs.push({ key: e.simp, value: JSON.stringify(value) });
     }
-
-    // Build traditional variant index for compound lookups
     if (!tradIndex[e.trad]) tradIndex[e.trad] = [];
     tradIndex[e.trad].push(e.trad);
   }
 
-  // Write traditional index entries
   for (const [trad, keys] of Object.entries(tradIndex)) {
     if (keys.length > 1) {
       kvPairs.push({ key: `_trad_${trad}`, value: JSON.stringify([...new Set(keys)]) });
@@ -136,8 +119,7 @@ async function main() {
 
   console.log(`Writing ${kvPairs.length} KV entries...`);
   await kvBulkWrite(kvPairs);
-  console.log('Done! Dictionary loaded into Cloudflare KV.');
-  console.log('Now redeploy your Worker to pick up the CEDICT binding.');
+  console.log('\nDone! Dictionary loaded into Cloudflare KV.');
 }
 
 main().catch(err => { console.error(err); process.exit(1); });
