@@ -2905,6 +2905,7 @@ function speak(text, btn) {
   // Track for repeat
   lastSpokenText = text;
 
+  // Cancel and use a short delay — fixes browser TTS stuck-after-first-utterance bug
   window.speechSynthesis.cancel();
 
   // If already speaking this button, just stop
@@ -2916,43 +2917,55 @@ function speak(text, btn) {
 
   if (activeTtsBtn) { activeTtsBtn.classList.remove('speaking'); activeTtsBtn = null; }
 
-  const utt = new SpeechSynthesisUtterance(text);
-  utt.lang = 'zh-TW';
-  utt.rate = 0.9;
-  utt.pitch = 1;
-  const voice = getVoice();
-  if (voice) utt.voice = voice;
+  // Small delay lets the synthesis engine reset after cancel()
+  setTimeout(() => {
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.lang = 'zh-TW';
+    utt.rate = 0.9;
+    utt.pitch = 1;
+    const voice = getVoice();
+    if (voice) utt.voice = voice;
 
-  if (btn) {
-    btn.classList.add('speaking');
-    activeTtsBtn = btn;
-    utt.onend = () => {
-      btn.classList.remove('speaking');
-      activeTtsBtn = null;
-      // Show repeat button after playback finishes
-      let repeatBtn = btn.parentElement?.querySelector('.repeat-btn');
-      if (!repeatBtn) {
-        repeatBtn = document.createElement('button');
-        repeatBtn.className = 'repeat-btn visible';
-        repeatBtn.title = 'Repeat';
-        repeatBtn.innerHTML = '↺ Repeat';
-        repeatBtn.onclick = () => speak(lastSpokenText, btn);
-        btn.after(repeatBtn);
-      } else {
-        repeatBtn.classList.add('visible');
-      }
-    };
-    utt.onerror = () => { btn.classList.remove('speaking'); activeTtsBtn = null; };
-  }
+    if (btn) {
+      btn.classList.add('speaking');
+      activeTtsBtn = btn;
+      utt.onend = () => {
+        btn.classList.remove('speaking');
+        activeTtsBtn = null;
+        let repeatBtn = btn.parentElement?.querySelector('.repeat-btn');
+        if (!repeatBtn) {
+          repeatBtn = document.createElement('button');
+          repeatBtn.className = 'repeat-btn visible';
+          repeatBtn.title = 'Repeat';
+          repeatBtn.innerHTML = '↺ Repeat';
+          repeatBtn.onclick = () => speak(lastSpokenText, btn);
+          btn.after(repeatBtn);
+        } else {
+          repeatBtn.classList.add('visible');
+        }
+      };
+      utt.onerror = () => { btn.classList.remove('speaking'); activeTtsBtn = null; };
+    }
 
-  window.speechSynthesis.speak(utt);
+    window.speechSynthesis.speak(utt);
+  }, 100);
 }
 
 function previewVoice() {
   const select = document.getElementById('pref-voice');
   if (!select) return;
   state.prefs.voiceName = select.value;
-  speak('你好！歡迎使用練到好。', null);
+  // Full reset before preview — fixes stuck TTS in voice selector
+  window.speechSynthesis.cancel();
+  setTimeout(() => {
+    const utt = new SpeechSynthesisUtterance('你好！歡迎使用練到好。');
+    utt.lang = 'zh-TW';
+    utt.rate = 0.9;
+    const voices = window.speechSynthesis.getVoices();
+    const voice = voices.find(v => v.name === state.prefs.voiceName);
+    if (voice) utt.voice = voice;
+    window.speechSynthesis.speak(utt);
+  }, 150);
 }
 
 // Helper to create a listen button HTML string
