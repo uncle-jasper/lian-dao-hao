@@ -842,7 +842,263 @@
   }
   .progress-pill .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
 
+  /* Chunk selector */
+  .chunk-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .chunk-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .chunk-item:hover { border-color: var(--accent-dim); background: var(--accent-glow); }
+  .chunk-item.selected { border-color: var(--accent); background: var(--accent-glow); }
+  .chunk-item.completed { opacity: 0.5; }
+  .chunk-item.resume { border-color: var(--green); }
+  .chunk-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    min-width: 52px;
+  }
+  .chunk-preview {
+    flex: 1;
+    font-family: 'Noto Serif TC', serif;
+    font-size: 13px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .chunk-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .chunk-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: rgba(122,184,122,0.15);
+    border: 1px solid rgba(122,184,122,0.3);
+    color: var(--green);
+  }
+
+  /* Repeat button */
+  .repeat-btn {
+    display: none;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+  .repeat-btn.visible { display: inline-flex; }
+  .repeat-btn:hover { border-color: var(--blue); color: var(--blue); }
+
+  /* Highlight-to-add popover */
+  #add-to-bank-popover {
+    position: fixed;
+    background: var(--bg2);
+    border: 1px solid var(--accent-dim);
+    border-radius: 8px;
+    padding: 8px 10px;
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 1000;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    min-width: 180px;
+    animation: fadeIn 0.15s ease;
+  }
+  #add-to-bank-popover.visible { display: flex; }
+  .popover-word {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 20px;
+    color: var(--text);
+    text-align: center;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .popover-def {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-style: italic;
+    line-height: 1.5;
+    max-height: 60px;
+    overflow: hidden;
+    display: none;
+  }
+  .popover-def.loaded { display: block; }
+  .popover-pinyin {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    display: none;
+  }
+  .popover-pinyin.loaded { display: block; }
+
+  /* Expanded bank cards */
+  .bank-item {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    transition: border-color 0.15s;
+  }
+  .bank-item:hover { border-color: var(--accent-dim); }
+  .bank-item-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .bank-item .zh {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 20px;
+    color: var(--text);
+  }
+  .bank-item .pinyin {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    font-style: normal;
+  }
+  .bank-item .remove-bank {
+    margin-left: auto;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    transition: color 0.15s;
+    flex-shrink: 0;
+  }
+  .bank-item .remove-bank:hover { color: var(--red); }
+  .bank-item .en {
+    font-size: 13px;
+    color: var(--text-dim);
+    font-style: italic;
+    line-height: 1.5;
+    margin-bottom: 4px;
+  }
+  .bank-item .example {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px solid var(--border);
+    display: none;
+  }
+  .bank-item .example.loaded { display: block; }
+  .bank-item .lookup-status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
   hr.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+  /* TTS / Listen buttons */
+  .listen-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.15s;
+    vertical-align: middle;
+  }
+  .listen-btn:hover { border-color: var(--blue); color: var(--blue); }
+  .listen-btn.speaking {
+    border-color: var(--blue);
+    color: var(--blue);
+    background: rgba(122,154,184,0.1);
+    animation: speak-pulse 1.5s infinite ease-in-out;
+  }
+  @keyframes speak-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .listen-btn svg { width: 11px; height: 11px; }
+
+  /* Listening warmup overlay */
+  .listen-warmup {
+    background: var(--bg2);
+    border: 1px solid var(--accent-dim);
+    border-radius: 10px;
+    padding: 28px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .listen-warmup .listen-icon {
+    font-size: 36px;
+    margin-bottom: 12px;
+    animation: speak-pulse 1.5s infinite ease-in-out;
+  }
+  .listen-warmup .listen-title {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 18px;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .listen-warmup .listen-sub {
+    font-size: 13px;
+    color: var(--text-dim);
+    font-style: italic;
+    margin-bottom: 20px;
+  }
+
+  /* Mic error */
+  .mic-error {
+    font-size: 11px;
+    color: var(--red);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 4px;
+    display: none;
+  }
+  .mic-error.shown { display: block; }
+
+  /* Voice selector in settings */
+  .voice-preview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
 
   /* Responsive hint for narrow windows */
   @media (max-width: 700px) {
@@ -851,6 +1107,23 @@
 </style>
 </head>
 <body>
+
+<!-- HIGHLIGHT-TO-ADD POPOVER -->
+<div id="add-to-bank-popover">
+  <div class="popover-word" id="popover-word"></div>
+  <div class="popover-pinyin" id="popover-pinyin"></div>
+  <div class="popover-def" id="popover-def"></div>
+  <div style="display:flex;gap:6px;margin-top:4px;">
+    <button class="btn primary sm" id="popover-add-btn" onclick="confirmAddToBank()">Add to Bank</button>
+    <button class="btn sm" onclick="hidePopover()">✕</button>
+    <button class="listen-btn sm" id="popover-listen-btn" onclick="speak(document.getElementById('popover-word').textContent, this)" style="padding:4px 8px;">
+      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:11px;height:11px;">
+        <path d="M3 5.5v5l4 2.5V3L3 5.5z" fill="currentColor"/>
+        <path d="M10 5.5c1.1.6 1.8 1.7 1.8 3s-.7 2.4-1.8 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+</div>
 
 <!-- SIDEBAR -->
 <div id="sidebar">
@@ -1015,7 +1288,7 @@
 
         <div class="source-panel" id="source-paste">
           <div class="input-group">
-            <textarea id="paste-text" style="min-height:140px" placeholder="Paste any Chinese text here — article excerpt, dialogue, whatever you want to study..." oninput="updateCounter('paste-text','paste-counter')"></textarea>
+            <textarea id="paste-text" style="min-height:140px" placeholder="Paste any Chinese text here — article excerpt, dialogue, whatever you want to study..." oninput="updateCounter('paste-text','paste-counter'); checkForChunks('paste-text')"></textarea>
             <div class="char-counter">
               <span class="char-count" id="paste-counter">0 chars</span>
               <span class="char-warning" id="paste-warning"></span>
@@ -1024,8 +1297,11 @@
         </div>
       </div>
 
+      <div class="card" id="chunk-selector-area" style="display:none;">
+        <div class="card-title">Content Chunks</div>
+      </div>
+
       <div class="card">
-        <div class="card-title">Session Focus</div>
         <div class="input-group">
           <label class="input-label">What should this session emphasize?</label>
           <textarea id="session-focus" placeholder="e.g. 'I keep confusing 而且 and 但是. My listening comprehension drops when speech is fast. I struggle with measure words for flat objects.'" style="min-height:70px;"></textarea>
@@ -1251,6 +1527,28 @@
             Disable for full Claude feedback on every response.
           </div>
         </div>
+        <div class="input-group">
+          <label class="input-label">zh-TW Voice</label>
+          <div class="voice-preview">
+            <select id="pref-voice" style="flex:1;"></select>
+            <button class="btn sm" onclick="previewVoice()">Preview</button>
+          </div>
+          <div class="hint">Used for all listen buttons and auto-speak. Populated from voices installed on your device.</div>
+        </div>
+        <div class="input-group">
+          <label class="input-label" style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="pref-autospeak" style="width:auto;accent-color:var(--accent);">
+            <span>Auto-speak roleplay responses</span>
+          </label>
+          <div class="hint" style="margin-top:6px;">Automatically reads Claude's roleplay lines aloud as they arrive.</div>
+        </div>
+        <div class="input-group">
+          <label class="input-label" style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="pref-listen-warmup" style="width:auto;accent-color:var(--accent);" checked>
+            <span>Listening warm-up</span>
+          </label>
+          <div class="hint" style="margin-top:6px;">Reads content aloud before showing text in warm-up — trains your ear before reading challenges begin.</div>
+        </div>
         <button class="btn primary" onclick="saveSettings()">Save Preferences</button>
       </div>
 
@@ -1269,6 +1567,11 @@ const state = {
   openaiKey: '',
   bank: [],
   currentScreen: 'setup',
+  chunks: {
+    list: [],
+    currentIndex: 0,
+    sourceHash: '',
+  },
   session: {
     active: false,
     startTime: null,
@@ -1289,6 +1592,9 @@ const state = {
     feedbackLang: 'english',
     efficientMode: true,
     workerUrl: '',
+    voiceName: '',
+    autoSpeak: true,
+    listenWarmup: true,
   }
 };
 
@@ -1299,6 +1605,8 @@ function init() {
   state.anthropicKey = localStorage.getItem('mc_anthropic_key') || '';
   state.openaiKey = localStorage.getItem('mc_openai_key') || '';
   state.bank = JSON.parse(localStorage.getItem('mc_bank') || '[]');
+  const savedChunks = JSON.parse(localStorage.getItem('mc_chunks') || 'null');
+  if (savedChunks) state.chunks = savedChunks;
   const prefs = JSON.parse(localStorage.getItem('mc_prefs') || '{}');
   state.prefs = { ...state.prefs, ...prefs };
 
@@ -1307,9 +1615,12 @@ function init() {
   document.getElementById('pref-level').value = state.prefs.level;
   document.getElementById('pref-feedback-lang').value = state.prefs.feedbackLang;
   document.getElementById('pref-efficient').checked = state.prefs.efficientMode;
+  document.getElementById('pref-autospeak').checked = state.prefs.autoSpeak;
+  document.getElementById('pref-listen-warmup').checked = state.prefs.listenWarmup;
   if (state.prefs.workerUrl) document.getElementById('worker-url').value = state.prefs.workerUrl;
   updateModePill();
   updateWorkerStatus('idle');
+  populateVoices();
 
   renderBank();
   updateNavState();
@@ -1328,6 +1639,7 @@ function showScreen(name) {
   document.getElementById('screen-' + name).classList.add('active');
   state.currentScreen = name;
   updateNavState();
+  if (name === 'settings') populateVoices();
 }
 
 function updateNavState() {
@@ -1367,6 +1679,9 @@ function saveSettings() {
   state.prefs.feedbackLang = document.getElementById('pref-feedback-lang').value;
   state.prefs.efficientMode = document.getElementById('pref-efficient').checked;
   state.prefs.workerUrl = document.getElementById('worker-url').value.trim().replace(/\/$/, '');
+  state.prefs.voiceName = document.getElementById('pref-voice').value;
+  state.prefs.autoSpeak = document.getElementById('pref-autospeak').checked;
+  state.prefs.listenWarmup = document.getElementById('pref-listen-warmup').checked;
   localStorage.setItem('mc_anthropic_key', state.anthropicKey);
   localStorage.setItem('mc_openai_key', state.openaiKey);
   localStorage.setItem('mc_prefs', JSON.stringify(state.prefs));
@@ -1408,8 +1723,166 @@ function contentLimit() {
 }
 
 // ═══════════════════════════════════════════════════
-// CHAR COUNTER
+// CHUNKING ENGINE
 // ═══════════════════════════════════════════════════
+function simpleHash(str) {
+  let h = 0;
+  for (let i = 0; i < Math.min(str.length, 200); i++) {
+    h = ((h << 5) - h) + str.charCodeAt(i);
+    h |= 0;
+  }
+  return h.toString(36);
+}
+
+function chunkText(text, chunkSize) {
+  if (text.length <= chunkSize) return [text];
+  const chunks = [];
+  let pos = 0;
+  while (pos < text.length) {
+    let end = pos + chunkSize;
+    if (end >= text.length) {
+      chunks.push(text.slice(pos).trim());
+      break;
+    }
+    // Find best break point — paragraph, then sentence end, then space
+    const slice = text.slice(pos, end);
+    let breakAt = -1;
+    // Paragraph break
+    const paraBreak = slice.lastIndexOf('\n\n');
+    if (paraBreak > chunkSize * 0.5) breakAt = paraBreak + 2;
+    // Sentence-ending punctuation (Chinese + English)
+    if (breakAt < 0) {
+      const sentBreak = Math.max(
+        slice.lastIndexOf('。'), slice.lastIndexOf('！'),
+        slice.lastIndexOf('？'), slice.lastIndexOf('. '),
+        slice.lastIndexOf('! '), slice.lastIndexOf('? ')
+      );
+      if (sentBreak > chunkSize * 0.5) breakAt = sentBreak + 1;
+    }
+    // Last space
+    if (breakAt < 0) {
+      const spaceBreak = slice.lastIndexOf(' ');
+      if (spaceBreak > chunkSize * 0.3) breakAt = spaceBreak + 1;
+    }
+    if (breakAt < 0) breakAt = chunkSize;
+    chunks.push(text.slice(pos, pos + breakAt).trim());
+    pos += breakAt;
+  }
+  return chunks.filter(c => c.length > 0);
+}
+
+function detectAndChunk(text) {
+  const limit = contentLimit();
+  if (text.length <= limit) return null; // no chunking needed
+  return chunkText(text, limit);
+}
+
+function saveChunkState() {
+  localStorage.setItem('mc_chunks', JSON.stringify(state.chunks));
+}
+
+function renderChunkSelector(chunks, containerId, onSelect) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const resumeIndex = state.chunks.sourceHash === simpleHash(chunks.join(''))
+    ? state.chunks.currentIndex : 0;
+
+  let html = `<div style="margin-bottom:10px;font-size:13px;color:var(--text-dim);">
+    This content is <strong style="color:var(--text)">${chunks.length} chunks</strong> long.
+    Each chunk is one session. Pick up where you left off or choose any chunk.
+  </div>
+  <div class="chunk-selector">`;
+
+  chunks.forEach((chunk, i) => {
+    const preview = chunk.replace(/\s+/g, ' ').slice(0, 60);
+    const charCount = chunk.length.toLocaleString();
+    const isResume = i === resumeIndex;
+    const isDone = state.chunks.sourceHash === simpleHash(chunks.join('')) && i < state.chunks.currentIndex;
+    html += `
+      <div class="chunk-item ${isResume ? 'resume' : ''} ${isDone ? 'completed' : ''}"
+           onclick="selectChunk(${i})">
+        <span class="chunk-num">Chunk ${i + 1}</span>
+        <span class="chunk-preview">${preview}…</span>
+        <span class="chunk-meta">${charCount} chars</span>
+        ${isResume && i > 0 ? '<span class="chunk-badge">Resume</span>' : ''}
+        ${isDone ? '<span class="chunk-badge" style="color:var(--text-muted);border-color:var(--border);background:transparent;">Done</span>' : ''}
+      </div>`;
+  });
+  html += '</div>';
+  container.innerHTML = html;
+  container.style.display = 'block';
+  container._chunks = chunks;
+  container._onSelect = onSelect;
+}
+
+function selectChunk(index) {
+  const container = document.getElementById('chunk-selector-area');
+  if (!container || !container._chunks) return;
+  const chunks = container._chunks;
+
+  // Update state
+  state.chunks.list = chunks;
+  state.chunks.currentIndex = index;
+  state.chunks.sourceHash = simpleHash(chunks.join(''));
+  saveChunkState();
+
+  // Highlight selected
+  container.querySelectorAll('.chunk-item').forEach((el, i) => {
+    el.classList.toggle('selected', i === index);
+  });
+
+  // Call callback with selected chunk
+  if (container._onSelect) container._onSelect(chunks[index], index, chunks.length);
+}
+
+function advanceChunk() {
+  if (state.chunks.list.length > 0 && state.chunks.currentIndex < state.chunks.list.length - 1) {
+    state.chunks.currentIndex++;
+    saveChunkState();
+    return true;
+  }
+  return false;
+}
+
+// ═══════════════════════════════════════════════════
+// REPEAT BUTTON
+// ═══════════════════════════════════════════════════
+let lastSpokenText = '';
+
+// Live chunk detection on paste
+function checkForChunks(textareaId) {
+  const text = document.getElementById(textareaId)?.value.trim() || '';
+  const chunkArea = document.getElementById('chunk-selector-area');
+  if (!chunkArea) return;
+
+  const chunks = detectAndChunk(text);
+  if (!chunks) {
+    chunkArea.style.display = 'none';
+    chunkArea._selectedChunk = null;
+    chunkArea._chunks = null;
+    document.getElementById('start-btn').textContent = 'Begin Session →';
+    return;
+  }
+
+  const hash = simpleHash(text);
+  state.chunks.list = chunks;
+  state.chunks.sourceHash = hash;
+  const savedChunks = JSON.parse(localStorage.getItem('mc_chunks') || 'null');
+  if (savedChunks && savedChunks.sourceHash === hash) {
+    state.chunks.currentIndex = savedChunks.currentIndex;
+  } else {
+    state.chunks.currentIndex = 0;
+  }
+  saveChunkState();
+
+  renderChunkSelector(chunks, 'chunk-selector-area', (chunk, index, total) => {
+    chunkArea._selectedChunk = chunk;
+    document.getElementById('start-btn').textContent = `Begin Session — Chunk ${index + 1} of ${total} →`;
+  });
+  selectChunk(state.chunks.currentIndex);
+}
+
 const COUNTER_MAP = {
   'yt-transcript':  { counter: 'yt-counter',      warning: 'yt-warning' },
   'article-text':   { counter: 'article-counter',  warning: 'article-warning' },
@@ -1584,50 +2057,23 @@ function handleAudioFile(event) {
 // ═══════════════════════════════════════════════════
 // STRUGGLE BANK
 // ═══════════════════════════════════════════════════
-function addBankItem() {
-  const zh = document.getElementById('bank-zh').value.trim();
-  const en = document.getElementById('bank-en').value.trim();
-  if (!zh) return;
-  state.bank.push({ zh, en, addedAt: Date.now() });
-  localStorage.setItem('mc_bank', JSON.stringify(state.bank));
-  document.getElementById('bank-zh').value = '';
-  document.getElementById('bank-en').value = '';
-  renderBank();
-}
-
-function removeBankItem(index) {
-  state.bank.splice(index, 1);
-  localStorage.setItem('mc_bank', JSON.stringify(state.bank));
-  renderBank();
-}
-
-function renderBank() {
-  const list = document.getElementById('bank-list');
-  const empty = document.getElementById('bank-empty');
-  document.getElementById('bank-count').textContent = state.bank.length;
-  if (state.bank.length === 0) {
-    list.innerHTML = '';
-    empty.style.display = 'block';
-    return;
-  }
-  empty.style.display = 'none';
-  list.innerHTML = state.bank.map((item, i) => `
-    <div class="bank-item">
-      <span class="zh">${item.zh}</span>
-      <span class="en">${item.en || ''}</span>
-      <span class="remove-bank" onclick="removeBankItem(${i})">✕</span>
-    </div>
-  `).join('');
-}
-
 function flagItem(zh, en) {
-  if (!state.bank.find(b => b.zh === zh)) {
-    state.bank.push({ zh, en, addedAt: Date.now() });
-    localStorage.setItem('mc_bank', JSON.stringify(state.bank));
-    renderBank();
-  }
+  addBankItemWithData(zh, en, null);
   if (!state.session.flaggedItems.find(f => f.zh === zh)) {
     state.session.flaggedItems.push({ zh, en });
+    // Async lookup for flagged items
+    if (isChinese(zh) && state.prefs.workerUrl) {
+      lookupWord(zh).then(data => {
+        if (!data) return;
+        const item = state.bank.find(b => b.zh === zh);
+        if (item) {
+          if (!item.en && data.defs?.length) item.en = data.defs.slice(0,2).join('; ');
+          if (!item.pinyin) item.pinyin = data.pinyin || '';
+          if (!item.example) item.example = data.example || '';
+          localStorage.setItem('mc_bank', JSON.stringify(state.bank));
+        }
+      });
+    }
   }
 }
 
@@ -1708,7 +2154,6 @@ async function startSession() {
   // Collect content
   const tab = document.querySelector('.source-tab.active')?.textContent.toLowerCase() || 'paste';
   let content = '';
-  let contentType = tab;
 
   if (tab === 'youtube') {
     content = document.getElementById('yt-transcript').value.trim();
@@ -1728,6 +2173,43 @@ async function startSession() {
     content = document.getElementById('paste-text').value.trim();
     if (!content) { alert('Please paste some text.'); return; }
   }
+
+  // Check if chunking needed — if chunk already selected, use it directly
+  const chunkArea = document.getElementById('chunk-selector-area');
+  if (chunkArea && chunkArea._chunks && chunkArea._selectedChunk) {
+    content = chunkArea._selectedChunk;
+  } else {
+    const chunks = detectAndChunk(content);
+    if (chunks) {
+      // Show chunk selector and stop — don't start session yet
+      const hash = simpleHash(content);
+      state.chunks.list = chunks;
+      state.chunks.sourceHash = hash;
+      // Restore saved position if same content
+      const savedChunks = JSON.parse(localStorage.getItem('mc_chunks') || 'null');
+      if (savedChunks && savedChunks.sourceHash === hash) {
+        state.chunks.currentIndex = savedChunks.currentIndex;
+      } else {
+        state.chunks.currentIndex = 0;
+      }
+      saveChunkState();
+
+      renderChunkSelector(chunks, 'chunk-selector-area', (chunk, index, total) => {
+        chunkArea._selectedChunk = chunk;
+        chunkArea._selectedIndex = index;
+        document.getElementById('start-btn').textContent = `Begin Session — Chunk ${index + 1} of ${total} →`;
+      });
+
+      // Auto-select current/resume chunk
+      selectChunk(state.chunks.currentIndex);
+      document.getElementById('chunk-selector-area').scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+  }
+
+  // Clear chunk UI
+  if (chunkArea) { chunkArea.style.display = 'none'; chunkArea._selectedChunk = null; }
+  document.getElementById('start-btn').textContent = 'Begin Session →';
 
   state.session.content = content;
   state.session.focus = document.getElementById('session-focus').value.trim();
@@ -1772,6 +2254,13 @@ async function generateWarmup() {
   const container = document.getElementById('warmup-content');
   const actions = document.getElementById('warmup-actions');
 
+  // Play listening warm-up first if enabled
+  await new Promise(resolve => {
+    playListenWarmup(state.session.content, resolve);
+  });
+
+  container.innerHTML = `<div class="status-bar"><div class="loading-dots"><span></span><span></span><span></span></div> Generating warm-up from your content...</div>`;
+
   try {
     const focusNote = state.session.focus ? `\nStudent's focus for this session: ${state.session.focus}` : '';
     const prompt = `Here is the content for this session:\n\n${state.session.content.slice(0, contentLimit())}${focusNote}
@@ -1789,6 +2278,7 @@ Format with clear sections. Use Traditional Chinese throughout. This is the orie
       <div class="challenge-block">
         <div class="card-title">Content Overview</div>
         <div style="white-space: pre-wrap; line-height: 1.8; font-size: 14px; color: var(--text-dim);">${result}</div>
+        <div style="margin-top:12px;">${listenBtn(result)}</div>
       </div>
     `;
     actions.style.display = 'flex';
@@ -1870,7 +2360,7 @@ function renderComprehension() {
       html += `
         <div class="challenge-block" id="q-${i}">
           <div class="card-title">Question ${i+1} — Multiple Choice</div>
-          <div class="challenge-text">${q.zh}</div>
+          <div class="challenge-text">${q.zh} ${listenBtn(q.zh)}</div>
           <button class="show-english-btn" onclick="toggleEnglish('qen-${i}', this)">Show English</button>
           <div class="challenge-english" id="qen-${i}">${q.en}</div>
           <div class="mc-options">
@@ -1885,13 +2375,14 @@ function renderComprehension() {
       html += `
         <div class="challenge-block" id="q-${i}">
           <div class="card-title">Question ${i+1} — Open Response</div>
-          <div class="challenge-text">${q.zh}</div>
+          <div class="challenge-text">${q.zh} ${listenBtn(q.zh)}</div>
           <button class="show-english-btn" onclick="toggleEnglish('qen-${i}', this)">Show English</button>
           <div class="challenge-english" id="qen-${i}">${q.en}</div>
           <div class="response-area">
             <textarea placeholder="Type your answer in Chinese..." id="ans-${i}" style="font-family:'Noto Serif TC',serif;font-size:16px;"></textarea>
             <button class="mic-btn" onclick="toggleMic('ans-${i}', this)" title="Speak your answer">🎙</button>
           </div>
+          <div class="mic-error"></div>
           <div class="action-row">
             <button class="btn primary sm" onclick="submitOpenAnswer(${i}, '${escapeAttr(q.sample)}')">Check Answer</button>
             <button class="flag-btn" onclick="flagFromQuestion('${escapeAttr(q.zh)}', '${escapeAttr(q.en)}', this)">⚑ Flag</button>
@@ -2022,8 +2513,8 @@ function renderVocab() {
     <div class="challenge-block">
       <div class="card-title">Grammar Pattern — ${g.pattern}</div>
       <div style="font-size:14px; color:var(--text-dim); margin-bottom:10px;">${g.en_explanation}</div>
-      <div class="challenge-text" style="font-size:17px;">${g.zh_explanation}</div>
-      <div style="margin: 10px 0; font-style:italic; color:var(--text-dim); font-size:14px;">Example: ${g.example}</div>
+      <div class="challenge-text" style="font-size:17px;">${g.zh_explanation} ${listenBtn(g.zh_explanation)}</div>
+      <div style="margin: 10px 0; font-style:italic; color:var(--text-dim); font-size:14px;">Example: ${g.example} ${listenBtn(g.example)}</div>
       <hr class="divider">
       <div style="font-size:14px; color:var(--text-dim); margin-bottom:8px;">Fill in the blank:</div>
       <div class="challenge-text" style="font-size:18px;">${g.exercise}</div>
@@ -2031,6 +2522,7 @@ function renderVocab() {
         <textarea id="grammar-ans" placeholder="Your answer..." style="font-family:'Noto Serif TC',serif;font-size:16px;min-height:50px;"></textarea>
         <button class="mic-btn" onclick="toggleMic('grammar-ans', this)" title="Speak">🎙</button>
       </div>
+      <div class="mic-error"></div>
       <div class="action-row">
         <button class="btn primary sm" onclick="revealGrammarAnswer('${escapeAttr(g.answer)}')">Check</button>
       </div>
@@ -2043,12 +2535,13 @@ function renderVocab() {
   vocabData.sentenceChallenges.forEach((sc, i) => {
     html += `
       <div style="margin-bottom:18px;">
-        <div style="font-size:14px; color:var(--text-dim); margin-bottom:4px;">${sc.prompt}</div>
+        <div style="font-size:14px; color:var(--text-dim); margin-bottom:4px;">${sc.prompt} ${listenBtn(sc.prompt)}</div>
         ${sc.hint ? `<div class="hint" style="margin-bottom:8px;">Hint: ${sc.hint}</div>` : ''}
         <div class="response-area">
           <textarea id="sc-${i}" placeholder="Write your sentence in Chinese..." style="font-family:'Noto Serif TC',serif;font-size:16px;min-height:60px;"></textarea>
           <button class="mic-btn" onclick="toggleMic('sc-${i}', this)" title="Speak">🎙</button>
         </div>
+        <div class="mic-error"></div>
         <div class="action-row">
           <button class="btn primary sm" onclick="evalSentence(${i}, '${escapeAttr(sc.target_word)}')">Evaluate</button>
           <button class="flag-btn" id="scflag-${i}" onclick="flagItem('${escapeAttr(sc.target_word)}', ''); flagBtnActivate('scflag-${i}')">⚑ Flag ${sc.target_word}</button>
@@ -2165,6 +2658,7 @@ function renderRoleplay() {
       <textarea id="roleplay-input" placeholder="Respond in Chinese..." style="font-family:'Noto Serif TC',serif;font-size:16px;" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendRoleplayMessage();}"></textarea>
       <button class="mic-btn" onclick="toggleMic('roleplay-input', this)" title="Speak">🎙</button>
     </div>
+    <div class="mic-error"></div>
     <div class="action-row">
       <button class="btn primary" onclick="sendRoleplayMessage()">Send →</button>
       <button class="btn" onclick="goToSegment('review')">End Conversation → Review</button>
@@ -2175,6 +2669,11 @@ function renderRoleplay() {
   renderThread();
   state.session.completedSegments.push('roleplay');
   updateNavState();
+
+  // Auto-speak opening line
+  if (state.prefs.autoSpeak && roleplayScenario.opening_line) {
+    setTimeout(() => speak(roleplayScenario.opening_line, null), 500);
+  }
 }
 
 function renderThread() {
@@ -2186,6 +2685,7 @@ function renderThread() {
       <div class="message-bubble">
         ${msg.content}
         ${msg.en ? `<div class="message-en">${msg.en}</div>` : ''}
+        <div style="margin-top:6px;">${listenBtn(msg.content)}</div>
       </div>
     </div>
   `).join('');
@@ -2234,6 +2734,11 @@ async function sendRoleplayMessage() {
 
     state.session.roleplayHistory.push({ role: 'assistant', content: inChar });
     renderThread();
+
+    // Auto-speak Claude's response if enabled
+    if (state.prefs.autoSpeak && inChar) {
+      speak(inChar, null);
+    }
 
     if (oocNote) {
       fb.className = 'feedback-block shown neutral';
@@ -2289,15 +2794,45 @@ function renderReview() {
       </div>
     </div>
 
-    <div style="display:flex; gap:12px; margin-top:16px;">
+    <div style="display:flex; gap:12px; margin-top:16px; flex-wrap:wrap;">
       <button class="btn primary" onclick="newSession()">New Session →</button>
       <button class="btn" onclick="showScreen('bank')">Review Struggle Bank</button>
+      ${state.chunks.list.length > 0 && state.chunks.currentIndex < state.chunks.list.length - 1 ? `
+        <button class="btn" style="border-color:var(--green);color:var(--green);" onclick="continueNextChunk()">
+          Continue → Chunk ${state.chunks.currentIndex + 2} of ${state.chunks.list.length}
+        </button>` : ''}
+      ${state.chunks.list.length > 0 && state.chunks.currentIndex >= state.chunks.list.length - 1 ? `
+        <div style="font-size:13px;color:var(--green);font-style:italic;padding:6px 0;">✓ All chunks completed for this content</div>
+      ` : ''}
     </div>
   `;
 
   state.session.completedSegments.push('review');
   updateNavState();
   clearInterval(timerInterval);
+}
+
+function continueNextChunk() {
+  advanceChunk();
+  // Pre-select next chunk and go straight to session
+  const nextContent = state.chunks.list[state.chunks.currentIndex];
+  state.session.content = nextContent;
+  state.session.focus = '';
+  state.session.length = parseInt(document.getElementById('session-length').value) || 30;
+  state.session.active = true;
+  state.session.completedSegments = [];
+  state.session.flaggedItems = [];
+  state.session.comprehensionAnswers = [];
+  state.session.roleplayHistory = [];
+  comprehensionData = null;
+  vocabData = null;
+  roleplayScenario = null;
+  document.getElementById('timer-display').textContent = '00:00';
+  document.getElementById('timer-fill').style.width = '0%';
+  startTimer(state.session.length);
+  showScreen('warmup');
+  setNavActive('warmup');
+  generateWarmup();
 }
 
 function newSession() {
@@ -2311,25 +2846,182 @@ function newSession() {
   roleplayScenario = null;
   document.getElementById('timer-display').textContent = '00:00';
   document.getElementById('timer-fill').style.width = '0%';
+  // Reset chunk selector UI
+  const chunkArea = document.getElementById('chunk-selector-area');
+  if (chunkArea) { chunkArea.style.display = 'none'; chunkArea._selectedChunk = null; }
+  document.getElementById('start-btn').textContent = 'Begin Session →';
   showScreen('setup');
   updateNavState();
+}
+
+// ═══════════════════════════════════════════════════
+// TTS — TEXT TO SPEECH
+// ═══════════════════════════════════════════════════
+let ttsVoices = [];
+let activeTtsBtn = null;
+
+function populateVoices() {
+  const select = document.getElementById('pref-voice');
+  if (!select) return;
+
+  function loadVoices() {
+    ttsVoices = window.speechSynthesis.getVoices();
+    const zhVoices = ttsVoices.filter(v =>
+      v.lang.startsWith('zh') || v.lang.includes('TW') || v.lang.includes('HK')
+    );
+    const allVoices = zhVoices.length > 0 ? zhVoices : ttsVoices;
+    select.innerHTML = allVoices.map(v =>
+      `<option value="${v.name}" ${v.name === state.prefs.voiceName ? 'selected' : ''}>${v.name} (${v.lang})</option>`
+    ).join('');
+    if (!state.prefs.voiceName && zhVoices.length > 0) {
+      // Auto-select best zh-TW voice
+      const twVoice = zhVoices.find(v => v.lang === 'zh-TW') || zhVoices[0];
+      select.value = twVoice.name;
+      state.prefs.voiceName = twVoice.name;
+    }
+  }
+
+  if (window.speechSynthesis.getVoices().length > 0) {
+    loadVoices();
+  } else {
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+  }
+}
+
+function getVoice() {
+  const voices = window.speechSynthesis.getVoices();
+  if (state.prefs.voiceName) {
+    const match = voices.find(v => v.name === state.prefs.voiceName);
+    if (match) return match;
+  }
+  return voices.find(v => v.lang === 'zh-TW') ||
+         voices.find(v => v.lang.startsWith('zh')) ||
+         null;
+}
+
+function speak(text, btn) {
+  if (!window.speechSynthesis) return;
+
+  // Track for repeat
+  lastSpokenText = text;
+
+  window.speechSynthesis.cancel();
+
+  // If already speaking this button, just stop
+  if (activeTtsBtn === btn && btn) {
+    btn.classList.remove('speaking');
+    activeTtsBtn = null;
+    return;
+  }
+
+  if (activeTtsBtn) { activeTtsBtn.classList.remove('speaking'); activeTtsBtn = null; }
+
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = 'zh-TW';
+  utt.rate = 0.9;
+  utt.pitch = 1;
+  const voice = getVoice();
+  if (voice) utt.voice = voice;
+
+  if (btn) {
+    btn.classList.add('speaking');
+    activeTtsBtn = btn;
+    utt.onend = () => {
+      btn.classList.remove('speaking');
+      activeTtsBtn = null;
+      // Show repeat button after playback finishes
+      let repeatBtn = btn.parentElement?.querySelector('.repeat-btn');
+      if (!repeatBtn) {
+        repeatBtn = document.createElement('button');
+        repeatBtn.className = 'repeat-btn visible';
+        repeatBtn.title = 'Repeat';
+        repeatBtn.innerHTML = '↺ Repeat';
+        repeatBtn.onclick = () => speak(lastSpokenText, btn);
+        btn.after(repeatBtn);
+      } else {
+        repeatBtn.classList.add('visible');
+      }
+    };
+    utt.onerror = () => { btn.classList.remove('speaking'); activeTtsBtn = null; };
+  }
+
+  window.speechSynthesis.speak(utt);
+}
+
+function previewVoice() {
+  const select = document.getElementById('pref-voice');
+  if (!select) return;
+  state.prefs.voiceName = select.value;
+  speak('你好！歡迎使用練到好。', null);
+}
+
+// Helper to create a listen button HTML string
+function listenBtn(text, extraClass) {
+  const escaped = escapeAttr(text);
+  return `<button class="listen-btn ${extraClass||''}" onclick="speak('${escaped}', this)" title="Listen">
+    <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3 5.5v5l4 2.5V3L3 5.5z" fill="currentColor"/>
+      <path d="M10 5.5c1.1.6 1.8 1.7 1.8 3s-.7 2.4-1.8 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M12 3.5c1.8 1.1 3 3 3 4.5s-1.2 3.4-3 4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+    </svg>
+    Listen
+  </button>`;
+}
+
+// ═══════════════════════════════════════════════════
+// LISTENING WARM-UP
+// ═══════════════════════════════════════════════════
+function playListenWarmup(text, onComplete) {
+  if (!state.prefs.listenWarmup || !window.speechSynthesis) {
+    onComplete();
+    return;
+  }
+
+  const container = document.getElementById('warmup-content');
+  container.innerHTML = `
+    <div class="listen-warmup">
+      <div class="listen-icon">🔊</div>
+      <div class="listen-title">聽力準備 — Listening Warm-up</div>
+      <div class="listen-sub">Listen to the content before reading. Close your eyes if it helps.</div>
+      <button class="btn" onclick="skipListenWarmup()">Skip → Show Text</button>
+    </div>`;
+
+  window._skipWarmup = onComplete;
+
+  // Extract Chinese text only for speaking (strip English/URLs)
+  const speakText = text.replace(/https?:\/\/\S+/g, '').replace(/[a-zA-Z0-9\s]{6,}/g, ' ').trim().slice(0, 600);
+
+  const utt = new SpeechSynthesisUtterance(speakText || text.slice(0, 400));
+  utt.lang = 'zh-TW';
+  utt.rate = 0.85;
+  const voice = getVoice();
+  if (voice) utt.voice = voice;
+  utt.onend = onComplete;
+  utt.onerror = onComplete;
+  window.speechSynthesis.speak(utt);
+}
+
+function skipListenWarmup() {
+  window.speechSynthesis.cancel();
+  if (window._skipWarmup) { window._skipWarmup(); window._skipWarmup = null; }
 }
 
 // ═══════════════════════════════════════════════════
 // MIC / STT
 // ═══════════════════════════════════════════════════
 let recognition = null;
-let activeMicBtn = null;
-let activeMicTarget = null;
 
 function toggleMic(targetId, btn) {
-  if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
-    alert('Speech recognition is not supported in this browser. Try Chrome or Edge.');
+  const micError = btn.parentElement.querySelector('.mic-error');
+
+  // Stop if already recording
+  if (recognition && btn.classList.contains('recording')) {
+    recognition.stop();
     return;
   }
 
-  if (recognition && btn.classList.contains('recording')) {
-    recognition.stop();
+  if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+    if (micError) { micError.textContent = 'Speech recognition not supported. Try Chrome.'; micError.classList.add('shown'); }
     return;
   }
 
@@ -2338,10 +3030,12 @@ function toggleMic(targetId, btn) {
   recognition.lang = 'zh-TW';
   recognition.interimResults = false;
   recognition.maxAlternatives = 1;
+  recognition.continuous = false;
 
-  btn.classList.add('recording');
-  activeMicBtn = btn;
-  activeMicTarget = targetId;
+  recognition.onstart = () => {
+    btn.classList.add('recording');
+    if (micError) micError.classList.remove('shown');
+  };
 
   recognition.onresult = (event) => {
     const transcript = event.results[0][0].transcript;
@@ -2356,10 +3050,220 @@ function toggleMic(targetId, btn) {
 
   recognition.onerror = (e) => {
     btn.classList.remove('recording');
-    if (e.error !== 'no-speech') console.warn('STT error:', e.error);
+    recognition = null;
+    if (e.error === 'not-allowed') {
+      if (micError) { micError.textContent = 'Mic blocked. In Brave: click the shield icon → disable fingerprinting. In Safari: use Chrome instead.'; micError.classList.add('shown'); }
+    } else if (e.error === 'no-speech') {
+      // silent
+    } else {
+      if (micError) { micError.textContent = `Mic error: ${e.error}`; micError.classList.add('shown'); }
+    }
   };
 
-  recognition.start();
+  try {
+    recognition.start();
+  } catch(e) {
+    if (micError) { micError.textContent = 'Could not start mic. ' + e.message; micError.classList.add('shown'); }
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// DICTIONARY LOOKUP (CC-CEDICT via Worker)
+// ═══════════════════════════════════════════════════
+const dictCache = {};
+
+async function lookupWord(word) {
+  if (dictCache[word]) return dictCache[word];
+  if (!state.prefs.workerUrl) return null;
+  try {
+    const res = await fetch(`${state.prefs.workerUrl}/lookup?word=${encodeURIComponent(word)}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.found) return null;
+    // Normalise multiple-entry responses
+    if (data.multiple && data.entries?.length > 0) {
+      const e = data.entries[0];
+      const result = { pinyin: e.pinyin, defs: e.defs, example: e.example };
+      dictCache[word] = result;
+      return result;
+    }
+    const result = { pinyin: data.pinyin, defs: data.defs, example: data.example };
+    dictCache[word] = result;
+    return result;
+  } catch(e) {
+    return null;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// HIGHLIGHT-TO-ADD POPOVER
+// ═══════════════════════════════════════════════════
+let popoverWord = '';
+let popoverDictData = null;
+
+function isChinese(str) {
+  return /[\u4e00-\u9fff\u3400-\u4dbf]/.test(str);
+}
+
+function showPopover(word, x, y) {
+  popoverWord = word.trim();
+  popoverDictData = null;
+  if (!popoverWord || !isChinese(popoverWord)) return;
+
+  const pop = document.getElementById('add-to-bank-popover');
+  const wordEl = document.getElementById('popover-word');
+  const pinyinEl = document.getElementById('popover-pinyin');
+  const defEl = document.getElementById('popover-def');
+
+  wordEl.textContent = popoverWord;
+  pinyinEl.textContent = '';
+  pinyinEl.classList.remove('loaded');
+  defEl.textContent = '';
+  defEl.classList.remove('loaded');
+
+  // Position near selection
+  const pw = 200;
+  const left = Math.min(x, window.innerWidth - pw - 16);
+  const top = y + 8;
+  pop.style.left = left + 'px';
+  pop.style.top = top + 'px';
+  pop.classList.add('visible');
+
+  // Async dictionary lookup
+  lookupWord(popoverWord).then(data => {
+    if (!data) return;
+    popoverDictData = data;
+    if (data.pinyin) { pinyinEl.textContent = data.pinyin; pinyinEl.classList.add('loaded'); }
+    if (data.defs?.length > 0) {
+      defEl.textContent = data.defs.slice(0, 2).join('; ');
+      defEl.classList.add('loaded');
+    }
+  });
+}
+
+function hidePopover() {
+  document.getElementById('add-to-bank-popover').classList.remove('visible');
+  popoverWord = '';
+  popoverDictData = null;
+}
+
+function confirmAddToBank() {
+  if (!popoverWord) return;
+  const en = popoverDictData?.defs?.slice(0,2).join('; ') || '';
+  addBankItemWithData(popoverWord, en, popoverDictData);
+  hidePopover();
+  // Brief flash feedback
+  const btn = document.getElementById('popover-add-btn');
+  if (btn) { btn.textContent = '✓ Added'; setTimeout(() => { btn.textContent = 'Add to Bank'; }, 1200); }
+}
+
+// Listen for text selection across the whole session
+document.addEventListener('mouseup', (e) => {
+  // Don't show on inputs/textareas
+  if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+  // Don't show when clicking popover itself
+  if (e.target.closest('#add-to-bank-popover')) return;
+
+  const sel = window.getSelection();
+  const text = sel?.toString().trim();
+  if (text && text.length >= 1 && text.length <= 6 && isChinese(text)) {
+    const range = sel.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    showPopover(text, rect.left + window.scrollX, rect.bottom + window.scrollY);
+  } else if (text === '') {
+    hidePopover();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') hidePopover();
+});
+
+// ═══════════════════════════════════════════════════
+// STRUGGLE BANK — EXTENDED
+// ═══════════════════════════════════════════════════
+function addBankItem() {
+  const zh = document.getElementById('bank-zh').value.trim();
+  const en = document.getElementById('bank-en').value.trim();
+  if (!zh) return;
+  addBankItemWithData(zh, en, null);
+  document.getElementById('bank-zh').value = '';
+  document.getElementById('bank-en').value = '';
+  // Trigger async lookup for manually added items
+  if (zh && isChinese(zh)) {
+    lookupWord(zh).then(data => {
+      if (!data) return;
+      const item = state.bank.find(b => b.zh === zh);
+      if (item) {
+        if (!item.en && data.defs?.length) item.en = data.defs.slice(0,2).join('; ');
+        if (!item.pinyin && data.pinyin) item.pinyin = data.pinyin;
+        if (!item.example && data.example) item.example = data.example;
+        localStorage.setItem('mc_bank', JSON.stringify(state.bank));
+        renderBank();
+      }
+    });
+  }
+}
+
+function addBankItemWithData(zh, en, dictData) {
+  if (state.bank.find(b => b.zh === zh)) return; // already exists
+  const item = {
+    zh,
+    en: en || dictData?.defs?.slice(0,2).join('; ') || '',
+    pinyin: dictData?.pinyin || '',
+    example: dictData?.example || '',
+    addedAt: Date.now(),
+  };
+  state.bank.push(item);
+  localStorage.setItem('mc_bank', JSON.stringify(state.bank));
+  renderBank();
+}
+
+function removeBankItem(index) {
+  state.bank.splice(index, 1);
+  localStorage.setItem('mc_bank', JSON.stringify(state.bank));
+  renderBank();
+}
+
+function renderBank() {
+  const list = document.getElementById('bank-list');
+  const empty = document.getElementById('bank-empty');
+  document.getElementById('bank-count').textContent = state.bank.length;
+  if (state.bank.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  list.innerHTML = state.bank.map((item, i) => `
+    <div class="bank-item">
+      <div class="bank-item-header">
+        <span class="zh">${item.zh}</span>
+        ${item.pinyin ? `<span class="pinyin">${item.pinyin}</span>` : ''}
+        <span style="margin-left:4px;">${listenBtn ? listenBtn(item.zh) : ''}</span>
+        <span class="remove-bank" onclick="removeBankItem(${i})">✕</span>
+      </div>
+      ${item.en ? `<div class="en">${item.en}</div>` : '<div class="lookup-status">Looking up definition…</div>'}
+      ${item.example ? `<div class="example loaded">${item.example}</div>` : ''}
+    </div>
+  `).join('');
+
+  // Async lookup for items missing data
+  state.bank.forEach((item, i) => {
+    if ((!item.en || !item.pinyin) && isChinese(item.zh) && state.prefs.workerUrl) {
+      lookupWord(item.zh).then(data => {
+        if (!data) return;
+        let changed = false;
+        if (!item.en && data.defs?.length) { item.en = data.defs.slice(0,2).join('; '); changed = true; }
+        if (!item.pinyin && data.pinyin) { item.pinyin = data.pinyin; changed = true; }
+        if (!item.example && data.example) { item.example = data.example; changed = true; }
+        if (changed) {
+          localStorage.setItem('mc_bank', JSON.stringify(state.bank));
+          renderBank();
+        }
+      });
+    }
+  });
 }
 
 // ═══════════════════════════════════════════════════
