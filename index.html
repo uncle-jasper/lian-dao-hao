@@ -1014,6 +1014,56 @@
     margin-top: 4px;
   }
 
+  /* Resume card */
+  .resume-card {
+    background: var(--bg2);
+    border: 1px solid var(--green);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .resume-card:hover { background: rgba(122,184,122,0.06); }
+  .resume-card .resume-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .resume-card .resume-body { flex: 1; min-width: 0; }
+  .resume-card .resume-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--green);
+    margin-bottom: 4px;
+  }
+  .resume-card .resume-preview {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 14px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 3px;
+  }
+  .resume-card .resume-meta {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+  .resume-card .resume-dismiss {
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px;
+    flex-shrink: 0;
+  }
+  .resume-card .resume-dismiss:hover { color: var(--red); }
+
   hr.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 
   /* TTS / Listen buttons */
@@ -1179,7 +1229,9 @@
     <div class="topbar-title" id="topbar-title">
       <span>練到好</span> — Liàn Dào Hǎo
     </div>
-    <div id="topbar-actions"></div>
+    <div id="topbar-actions">
+      <button class="btn sm ghost" id="sync-btn" onclick="quickPushSync()" title="Sync progress to cloud" style="display:none;">↑ Sync</button>
+    </div>
   </div>
   <div id="content">
 
@@ -1189,6 +1241,9 @@
         <h1>新課程 — New Session</h1>
         <p>Choose your content source and configure this session.</p>
       </div>
+
+      <!-- Resume card — shown if a previous chunked session exists -->
+      <div id="resume-card" style="display:none;"></div>
 
       <div class="card">
         <div class="card-title">Content Source</div>
@@ -1213,7 +1268,7 @@
           </div>
           <div class="input-group" id="yt-transcript-group" style="display:none">
             <label class="input-label">Transcript</label>
-            <textarea id="yt-transcript" placeholder="Paste transcript here if fetch fails..." oninput="updateCounter('yt-transcript','yt-counter')"></textarea>
+            <textarea id="yt-transcript" placeholder="Paste transcript here if fetch fails..." oninput="updateCounter('yt-transcript','yt-counter'); checkForChunks('yt-transcript')"></textarea>
             <div class="char-counter">
               <span class="char-count" id="yt-counter">0 chars</span>
               <span class="char-warning" id="yt-warning"></span>
@@ -1477,6 +1532,33 @@
 
         <button class="btn primary" onclick="saveSettings()" style="margin-top:16px;">Save</button>
       </div>
+
+      <div class="card">
+        <div class="settings-title">Cross-Device Sync</div>
+        <div class="input-group">
+          <label class="input-label">Sync Passphrase</label>
+          <input type="password" id="sync-key" placeholder="choose any passphrase, e.g. taipei-2026">
+          <div class="hint">Set the same passphrase on every device. Your struggle bank, chunk progress, and preferences sync via your Cloudflare Worker. Requires the SYNC KV namespace (see setup guide below).</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+          <button class="btn primary" onclick="pushSync()">Push ↑</button>
+          <button class="btn" onclick="pullSync()">Pull ↓</button>
+          <span id="sync-status" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);"></span>
+        </div>
+        <details style="margin-top:12px;">
+          <summary style="font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--accent);cursor:pointer;user-select:none;">Setup Guide</summary>
+          <div style="margin-top:14px;display:flex;flex-direction:column;gap:14px;">
+            <div class="deploy-step"><div class="deploy-num">1</div><div class="deploy-body"><div class="deploy-title">Create a SYNC KV namespace</div><div class="deploy-desc">Cloudflare → Workers KV → Create namespace → name it <code>SYNC</code>.</div></div></div>
+            <div class="deploy-step"><div class="deploy-num">2</div><div class="deploy-body"><div class="deploy-title">Bind it to your Worker</div><div class="deploy-desc">Your Worker → Settings → Bindings → Add → KV Namespace → Variable: <code>SYNC</code> → Save and deploy.</div></div></div>
+            <div class="deploy-step"><div class="deploy-num">3</div><div class="deploy-body"><div class="deploy-title">Deploy the updated worker.js</div><div class="deploy-desc">Push the new <code>worker.js</code> from your repo and redeploy on Cloudflare.</div></div></div>
+            <div class="deploy-step"><div class="deploy-num">4</div><div class="deploy-body"><div class="deploy-title">Set passphrase on each device</div><div class="deploy-desc">Enter the same passphrase on every device. Push ↑ after a session. Pull ↓ on another device to load.</div></div></div>
+          </div>
+        </details>
+        <button class="btn primary" onclick="saveSettings()" style="margin-top:16px;">Save</button>
+      </div>
+
+      <div class="card">
+        <div class="settings-title">Preferences</div>
         <div class="input-group">
           <label class="input-label">Your current level</label>
           <select id="pref-level">
@@ -1570,6 +1652,7 @@ const state = {
     voiceName: '',
     autoSpeak: true,
     listenWarmup: true,
+    syncKey: '',
   }
 };
 
@@ -1593,12 +1676,15 @@ function init() {
   document.getElementById('pref-autospeak').checked = state.prefs.autoSpeak;
   document.getElementById('pref-listen-warmup').checked = state.prefs.listenWarmup;
   if (state.prefs.workerUrl) document.getElementById('worker-url').value = state.prefs.workerUrl;
+  if (state.prefs.syncKey) document.getElementById('sync-key').value = state.prefs.syncKey;
   updateModePill();
   updateWorkerStatus('idle');
+  updateSyncBtn();
   populateVoices();
 
   renderBank();
   updateNavState();
+  checkResumeCard();
 
   if (!state.anthropicKey) {
     showScreen('settings');
@@ -1654,6 +1740,7 @@ function saveSettings() {
   state.prefs.feedbackLang = document.getElementById('pref-feedback-lang').value;
   state.prefs.efficientMode = document.getElementById('pref-efficient').checked;
   state.prefs.workerUrl = document.getElementById('worker-url').value.trim().replace(/\/$/, '');
+  state.prefs.syncKey = document.getElementById('sync-key').value.trim();
   state.prefs.voiceName = document.getElementById('pref-voice').value;
   state.prefs.autoSpeak = document.getElementById('pref-autospeak').checked;
   state.prefs.listenWarmup = document.getElementById('pref-listen-warmup').checked;
@@ -1661,6 +1748,7 @@ function saveSettings() {
   localStorage.setItem('mc_openai_key', state.openaiKey);
   localStorage.setItem('mc_prefs', JSON.stringify(state.prefs));
   updateModePill();
+  updateSyncBtn();
   showScreen('setup');
 }
 
@@ -1753,7 +1841,73 @@ function detectAndChunk(text) {
 }
 
 function saveChunkState() {
-  localStorage.setItem('mc_chunks', JSON.stringify(state.chunks));
+  localStorage.setItem('mc_chunks', JSON.stringify({
+    ...state.chunks,
+    fullContent: state.chunks.fullContent || '',
+    sourcePreview: state.chunks.sourcePreview || '',
+  }));
+}
+
+function checkResumeCard() {
+  const card = document.getElementById('resume-card');
+  if (!card) return;
+
+  const saved = JSON.parse(localStorage.getItem('mc_chunks') || 'null');
+  if (!saved || !saved.fullContent || !saved.list?.length) {
+    card.style.display = 'none';
+    return;
+  }
+
+  // Only show if there are more chunks to do
+  const remaining = saved.list.length - saved.currentIndex;
+  if (remaining <= 0) { card.style.display = 'none'; return; }
+
+  const nextIndex = saved.currentIndex;
+  const total = saved.list.length;
+  const preview = saved.sourcePreview || saved.fullContent.slice(0, 80);
+
+  card.style.display = 'block';
+  card.innerHTML = `
+    <div class="resume-card" onclick="resumeChunkSession()">
+      <div class="resume-icon">↩</div>
+      <div class="resume-body">
+        <div class="resume-title">Resume previous content — Chunk ${nextIndex + 1} of ${total}</div>
+        <div class="resume-preview">${preview}…</div>
+        <div class="resume-meta">${remaining} chunk${remaining > 1 ? 's' : ''} remaining</div>
+      </div>
+      <div class="resume-dismiss" onclick="dismissResumeCard(event)" title="Dismiss">✕</div>
+    </div>`;
+}
+
+function resumeChunkSession() {
+  const saved = JSON.parse(localStorage.getItem('mc_chunks') || 'null');
+  if (!saved?.fullContent) return;
+
+  // Restore chunk state
+  state.chunks = { ...state.chunks, ...saved };
+
+  // Pre-populate the paste text tab with the full content
+  setSourceTab('paste');
+  document.getElementById('paste-text').value = saved.fullContent;
+  updateCounter('paste-text', 'paste-counter');
+
+  // Trigger chunk selector with saved position
+  const chunks = saved.list;
+  const chunkArea = document.getElementById('chunk-selector-area');
+  renderChunkSelector(chunks, 'chunk-selector-area', (chunk, index, total) => {
+    chunkArea._selectedChunk = chunk;
+    document.getElementById('start-btn').textContent = `Begin Session — Chunk ${index + 1} of ${total} →`;
+  });
+  selectChunk(saved.currentIndex);
+  chunkArea.scrollIntoView({ behavior: 'smooth' });
+}
+
+function dismissResumeCard(e) {
+  e.stopPropagation();
+  document.getElementById('resume-card').style.display = 'none';
+  // Clear saved chunks
+  localStorage.removeItem('mc_chunks');
+  state.chunks = { list: [], currentIndex: 0, sourceHash: '', fullContent: '', sourcePreview: '' };
 }
 
 function renderChunkSelector(chunks, containerId, onSelect) {
@@ -1838,6 +1992,8 @@ function checkForChunks(textareaId) {
   const hash = simpleHash(text);
   state.chunks.list = chunks;
   state.chunks.sourceHash = hash;
+  state.chunks.fullContent = text;
+  state.chunks.sourcePreview = text.replace(/\s+/g, ' ').slice(0, 80);
   const savedChunks = JSON.parse(localStorage.getItem('mc_chunks') || 'null');
   if (savedChunks && savedChunks.sourceHash === hash) {
     state.chunks.currentIndex = savedChunks.currentIndex;
@@ -1948,6 +2104,7 @@ async function fetchYouTubeTranscript() {
 
     textarea.value = data.transcript || '';
     updateCounter('yt-transcript', 'yt-counter');
+    checkForChunks('yt-transcript');
 
     // Show language note if zh-TW wasn't available
     if (data.note) {
@@ -2001,6 +2158,135 @@ function updateWorkerStatus(state, msg) {
   };
   const s = states[state] || states.idle;
   el.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${s.dot};margin-right:6px;vertical-align:middle;"></span><span style="color:${s.color};font-family:'JetBrains Mono',monospace;font-size:11px;">${s.text}</span>`;
+}
+
+// ═══════════════════════════════════════════════════
+// CROSS-DEVICE SYNC
+// ═══════════════════════════════════════════════════
+function setSyncStatus(msg, color) {
+  const el = document.getElementById('sync-status');
+  if (el) { el.textContent = msg; el.style.color = color || 'var(--text-muted)'; }
+}
+
+function getSyncPayload() {
+  return {
+    bank: state.bank,
+    chunks: JSON.parse(localStorage.getItem('mc_chunks') || 'null'),
+    prefs: {
+      level: state.prefs.level,
+      feedbackLang: state.prefs.feedbackLang,
+      efficientMode: state.prefs.efficientMode,
+      autoSpeak: state.prefs.autoSpeak,
+      listenWarmup: state.prefs.listenWarmup,
+    },
+    syncedAt: new Date().toISOString(),
+  };
+}
+
+async function pushSync() {
+  const key = state.prefs.syncKey || document.getElementById('sync-key')?.value.trim();
+  if (!key) { setSyncStatus('Enter a passphrase first', 'var(--red)'); return; }
+  if (!state.prefs.workerUrl) { setSyncStatus('Worker URL not configured', 'var(--red)'); return; }
+
+  setSyncStatus('Pushing…', 'var(--accent)');
+  try {
+    const res = await fetch(`${state.prefs.workerUrl}/sync?key=${encodeURIComponent(key)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(getSyncPayload()),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      setSyncStatus('✓ Pushed ' + new Date().toLocaleTimeString(), 'var(--green)');
+    } else {
+      setSyncStatus('Error: ' + (data.error || 'unknown'), 'var(--red)');
+    }
+  } catch(e) {
+    setSyncStatus('Failed: ' + e.message, 'var(--red)');
+  }
+}
+
+async function pullSync() {
+  const key = state.prefs.syncKey || document.getElementById('sync-key')?.value.trim();
+  if (!key) { setSyncStatus('Enter a passphrase first', 'var(--red)'); return; }
+  if (!state.prefs.workerUrl) { setSyncStatus('Worker URL not configured', 'var(--red)'); return; }
+
+  setSyncStatus('Pulling…', 'var(--accent)');
+  try {
+    const res = await fetch(`${state.prefs.workerUrl}/sync?key=${encodeURIComponent(key)}`);
+    const data = await res.json();
+    if (!data.found) { setSyncStatus('No data found for this passphrase', 'var(--text-muted)'); return; }
+
+    const payload = data.data;
+
+    // Merge bank — add items not already present
+    if (Array.isArray(payload.bank)) {
+      let added = 0;
+      for (const item of payload.bank) {
+        if (!state.bank.find(b => b.zh === item.zh)) {
+          state.bank.push(item);
+          added++;
+        }
+      }
+      localStorage.setItem('mc_bank', JSON.stringify(state.bank));
+      renderBank();
+    }
+
+    // Restore chunk progress
+    if (payload.chunks) {
+      localStorage.setItem('mc_chunks', JSON.stringify(payload.chunks));
+      state.chunks = { ...state.chunks, ...payload.chunks };
+    }
+
+    // Restore prefs (but not API keys — those stay local)
+    if (payload.prefs) {
+      state.prefs = { ...state.prefs, ...payload.prefs };
+      localStorage.setItem('mc_prefs', JSON.stringify(state.prefs));
+      document.getElementById('pref-level').value = state.prefs.level;
+      document.getElementById('pref-feedback-lang').value = state.prefs.feedbackLang;
+      document.getElementById('pref-efficient').checked = state.prefs.efficientMode;
+      document.getElementById('pref-autospeak').checked = state.prefs.autoSpeak;
+      document.getElementById('pref-listen-warmup').checked = state.prefs.listenWarmup;
+      updateModePill();
+    }
+
+    checkResumeCard();
+    const syncedAt = payload.syncedAt ? new Date(payload.syncedAt).toLocaleString() : 'unknown';
+    setSyncStatus(`✓ Pulled — saved ${syncedAt}`, 'var(--green)');
+
+  } catch(e) {
+    setSyncStatus('Failed: ' + e.message, 'var(--red)');
+  }
+}
+
+async function quickPushSync() {
+  const btn = document.getElementById('sync-btn');
+  if (btn) { btn.textContent = '↑ Syncing…'; btn.disabled = true; }
+  await pushSync();
+  setTimeout(() => {
+    if (btn) { btn.textContent = '↑ Sync'; btn.disabled = false; }
+  }, 2000);
+}
+
+function updateSyncBtn() {
+  const btn = document.getElementById('sync-btn');
+  if (btn) btn.style.display = state.prefs.syncKey ? 'inline-flex' : 'none';
+}
+
+let autoSyncTimer = null;
+function autoSync(reason) {
+  if (!state.prefs.syncKey || !state.prefs.workerUrl) return;
+  // Debounce — wait 3 seconds after last trigger before actually syncing
+  clearTimeout(autoSyncTimer);
+  autoSyncTimer = setTimeout(async () => {
+    const btn = document.getElementById('sync-btn');
+    if (btn) { btn.textContent = '↑ Syncing…'; btn.disabled = true; }
+    try {
+      await pushSync();
+    } finally {
+      if (btn) { btn.textContent = '↑ Sync'; btn.disabled = false; }
+    }
+  }, 3000);
 }
 
 async function fetchArticle() {
@@ -2102,6 +2388,10 @@ function getSystemPrompt() {
     ? `\n\nStruggle Bank (vocab/grammar the student specifically struggles with — weave these into challenges where possible):\n${state.bank.map(b => `- ${b.zh}${b.en ? ` (${b.en})` : ''}`).join('\n')}`
     : '';
 
+  const contentBoundary = state.session.active
+    ? `\n\nCRITICAL: This session is based on a specific content chunk. ALL questions, vocabulary, grammar examples, and comprehension challenges MUST be drawn exclusively from the content provided in the user message. Do NOT draw on outside knowledge, general topics, or content beyond what is explicitly provided. If a question cannot be answered from the provided content alone, do not include it.`
+    : '';
+
   return `You are an expert Taiwanese Mandarin coach. The student is a solid intermediate learner (TOCFL Level 3, studying for 7 years, targeting TOCFL Level 4). They live in Southern California but are relocating to Taipei and use Traditional Chinese characters exclusively.
 
 Your coaching priorities:
@@ -2112,7 +2402,7 @@ Your coaching priorities:
 
 Always use Traditional Chinese characters (繁體字). Include pinyin only when explicitly asked. Keep challenges authentic — avoid overly textbook-style sentences.
 
-Feedback language: ${state.prefs.feedbackLang === 'english' ? 'English' : state.prefs.feedbackLang === 'chinese' ? 'Traditional Chinese' : 'Mixed (Chinese with English gloss)'}.${bankItems}`;
+Feedback language: ${state.prefs.feedbackLang === 'english' ? 'English' : state.prefs.feedbackLang === 'chinese' ? 'Traditional Chinese' : 'Mixed (Chinese with English gloss)'}.${bankItems}${contentBoundary}`;
 }
 
 // ═══════════════════════════════════════════════════
@@ -2155,6 +2445,8 @@ async function startSession() {
       const hash = simpleHash(content);
       state.chunks.list = chunks;
       state.chunks.sourceHash = hash;
+      state.chunks.fullContent = content;
+      state.chunks.sourcePreview = content.replace(/\s+/g, ' ').slice(0, 80);
       // Restore saved position if same content
       const savedChunks = JSON.parse(localStorage.getItem('mc_chunks') || 'null');
       if (savedChunks && savedChunks.sourceHash === hash) {
@@ -2240,15 +2532,63 @@ Generate a warm-up overview for this content. Include:
 2. 5 key vocabulary items from the content — for each give: Traditional Chinese, pinyin, English meaning, and one example sentence from or inspired by the text
 3. One grammar pattern that appears in the text that is worth studying
 
-Format with clear sections. Use Traditional Chinese throughout. This is the orientation before challenges begin.`;
+Generate a warm-up overview. Return ONLY valid JSON:
+{
+  "summary": "3-4 sentence English summary of what the content is about",
+  "vocab": [
+    {"zh": "word in Traditional Chinese", "pinyin": "pīnyīn", "en": "English meaning", "example": "example sentence in Traditional Chinese"},
+    {"zh": "...", "pinyin": "...", "en": "...", "example": "..."},
+    {"zh": "...", "pinyin": "...", "en": "...", "example": "..."},
+    {"zh": "...", "pinyin": "...", "en": "...", "example": "..."},
+    {"zh": "...", "pinyin": "...", "en": "...", "example": "..."}
+  ],
+  "grammar": {
+    "pattern": "pattern name in English",
+    "explanation": "brief explanation in English",
+    "example": "example sentence in Traditional Chinese"
+  }
+}`;
 
     const result = await callClaude([{ role: 'user', content: prompt }], getSystemPrompt(), 1200);
+    const clean = result.replace(/```json|```/g, '').trim();
+    let warmupData;
+    try { warmupData = JSON.parse(clean); } catch(e) {
+      // fallback to plain text if JSON fails
+      container.innerHTML = `<div class="challenge-block"><div class="card-title">Content Overview</div><div style="white-space:pre-wrap;line-height:1.8;font-size:14px;color:var(--text-dim);">${result}</div></div>`;
+      actions.style.display = 'flex';
+      state.session.completedSegments.push('warmup');
+      updateNavState();
+      generateComprehension();
+      return;
+    }
 
     container.innerHTML = `
       <div class="challenge-block">
-        <div class="card-title">Content Overview</div>
-        <div style="white-space: pre-wrap; line-height: 1.8; font-size: 14px; color: var(--text-dim);">${result}</div>
-        <div style="margin-top:12px;">${listenBtn(result)}</div>
+        <div class="card-title">Overview</div>
+        <div style="font-size:14px;color:var(--text-dim);line-height:1.8;margin-bottom:16px;">${warmupData.summary}</div>
+
+        <div class="card-title" style="margin-top:4px;">Key Vocabulary</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px;">
+          ${warmupData.vocab.map(v => `
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:12px 14px;">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+                <span style="font-family:'Noto Serif TC',serif;font-size:20px;color:var(--text);">${v.zh}</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);">${v.pinyin}</span>
+                ${listenBtn(v.zh)}
+              </div>
+              <div style="font-size:13px;color:var(--text-dim);font-style:italic;margin-bottom:6px;">${v.en}</div>
+              <div style="font-family:'Noto Serif TC',serif;font-size:15px;color:var(--text-dim);">
+                ${v.example} ${listenBtn(v.example)}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="card-title">Grammar Pattern — ${warmupData.grammar.pattern}</div>
+        <div style="font-size:13px;color:var(--text-dim);margin-bottom:6px;">${warmupData.grammar.explanation}</div>
+        <div style="font-family:'Noto Serif TC',serif;font-size:16px;color:var(--text-dim);">
+          ${warmupData.grammar.example} ${listenBtn(warmupData.grammar.example)}
+        </div>
       </div>
     `;
     actions.style.display = 'flex';
@@ -2272,9 +2612,9 @@ async function generateComprehension() {
     ? `\nStruggle bank items to incorporate: ${state.bank.slice(0,8).map(b=>b.zh).join('、')}`
     : '';
 
-  const prompt = `Content:\n\n${state.session.content.slice(0, contentLimit())}${focusNote}${bankNote}
+  const prompt = `Content for this session (this is the ONLY material to base questions on — do not reference anything outside this text):\n\n${state.session.content.slice(0, contentLimit())}${focusNote}${bankNote}
 
-Generate a comprehension challenge set. Return ONLY valid JSON, no markdown, no explanation:
+Generate a comprehension challenge set based STRICTLY on the content above. Every question must be answerable from this text alone. Return ONLY valid JSON, no markdown, no explanation:
 {
   "questions": [
     {
@@ -2417,9 +2757,9 @@ async function generateVocabChallenges() {
     ? `\nStruggle bank items to prioritize: ${state.bank.map(b=>`${b.zh}${b.en?` (${b.en})`:''}`).join(', ')}`
     : '';
 
-  const prompt = `Content:\n\n${state.session.content.slice(0, contentLimit())}${bankNote}
+  const prompt = `Content for this session (vocab and grammar must come from THIS text only):\n\n${state.session.content.slice(0, contentLimit())}${bankNote}
 
-Generate vocabulary and grammar usage challenges. Return ONLY valid JSON:
+Generate vocabulary and grammar usage challenges drawn strictly from the content above. Return ONLY valid JSON:
 {
   "vocab": [
     {"zh": "word", "pinyin": "pīnyīn", "en": "meaning", "example": "example sentence using the word"},
@@ -2780,6 +3120,15 @@ function renderReview() {
   state.session.completedSegments.push('review');
   updateNavState();
   clearInterval(timerInterval);
+
+  // Advance chunk index now that this session is complete
+  if (state.chunks.list.length > 0) {
+    advanceChunk();
+    saveChunkState();
+  }
+
+  // Auto-sync if configured
+  autoSync('Session complete');
 }
 
 function continueNextChunk() {
@@ -2822,6 +3171,7 @@ function newSession() {
   document.getElementById('start-btn').textContent = 'Begin Session →';
   showScreen('setup');
   updateNavState();
+  checkResumeCard();
 }
 
 // ═══════════════════════════════════════════════════
@@ -3203,6 +3553,9 @@ function addBankItemWithData(zh, en, dictData) {
   if (state.anthropicKey && zh && isChinese(zh)) {
     generateBankExample(zh, item);
   }
+
+  // Auto-sync bank change
+  autoSync('Bank updated');
 }
 
 async function generateBankExample(zh, item) {
