@@ -1064,6 +1064,23 @@
   }
   .resume-card .resume-dismiss:hover { color: var(--red); }
 
+  /* Hover English translation on sentences */
+  .hover-sentence {
+    display: inline-block;
+    cursor: default;
+    position: relative;
+  }
+  .hover-en {
+    font-family: 'Spectral', serif;
+    font-size: 12px;
+    font-style: italic;
+    color: var(--text-muted);
+    margin-top: 3px;
+    display: none;
+    line-height: 1.5;
+  }
+  .hover-sentence:hover .hover-en { display: block; }
+
   hr.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 
   /* TTS / Listen buttons */
@@ -2530,27 +2547,23 @@ async function generateWarmup() {
 
   try {
     const focusNote = state.session.focus ? `\nStudent's focus for this session: ${state.session.focus}` : '';
-    const prompt = `Here is the content for this session:\n\n${state.session.content.slice(0, contentLimit())}${focusNote}
+    const prompt = `Here is the ONLY content for this session. Do not reference any vocabulary, grammar patterns, or topics outside of this exact text:\n\n${state.session.content.slice(0, contentLimit())}${focusNote}
 
-Generate a warm-up overview for this content. Include:
-1. A brief summary (3-4 sentences in English) of what the content is about
-2. 5 key vocabulary items from the content — for each give: Traditional Chinese, pinyin, English meaning, and one example sentence from or inspired by the text
-3. One grammar pattern that appears in the text that is worth studying
-
-Generate a warm-up overview. Return ONLY valid JSON:
+Extract a warm-up overview strictly from the content above — every vocab item and grammar pattern must appear in this text. Return ONLY valid JSON:
 {
-  "summary": "3-4 sentence English summary of what the content is about",
+  "summary": "3-4 sentence English summary of what this specific text is about",
   "vocab": [
-    {"zh": "word in Traditional Chinese", "pinyin": "pīnyīn", "en": "English meaning", "example": "example sentence in Traditional Chinese"},
-    {"zh": "...", "pinyin": "...", "en": "...", "example": "..."},
-    {"zh": "...", "pinyin": "...", "en": "...", "example": "..."},
-    {"zh": "...", "pinyin": "...", "en": "...", "example": "..."},
-    {"zh": "...", "pinyin": "...", "en": "...", "example": "..."}
+    {"zh": "word that appears in the text above", "pinyin": "pīnyīn", "en": "English meaning", "example": "example sentence using this word, drawn from or closely based on the text above", "example_en": "English translation of the example sentence"},
+    {"zh": "...", "pinyin": "...", "en": "...", "example": "...", "example_en": "..."},
+    {"zh": "...", "pinyin": "...", "en": "...", "example": "...", "example_en": "..."},
+    {"zh": "...", "pinyin": "...", "en": "...", "example": "...", "example_en": "..."},
+    {"zh": "...", "pinyin": "...", "en": "...", "example": "...", "example_en": "..."}
   ],
   "grammar": {
-    "pattern": "pattern name in English",
+    "pattern": "grammar pattern that appears in the text above",
     "explanation": "brief explanation in English",
-    "example": "example sentence in Traditional Chinese"
+    "example": "example sentence taken directly from or closely based on the text above",
+    "example_en": "English translation of the grammar example"
   }
 }`;
 
@@ -2582,8 +2595,10 @@ Generate a warm-up overview. Return ONLY valid JSON:
                 ${listenBtn(v.zh)}
               </div>
               <div style="font-size:13px;color:var(--text-dim);font-style:italic;margin-bottom:6px;">${v.en}</div>
-              <div style="font-family:'Noto Serif TC',serif;font-size:15px;color:var(--text-dim);">
-                ${v.example} ${listenBtn(v.example)}
+              <div class="hover-sentence">
+                <span style="font-family:'Noto Serif TC',serif;font-size:15px;color:var(--text-dim);">${v.example}</span>
+                ${listenBtn(v.example)}
+                ${v.example_en ? `<div class="hover-en">${v.example_en}</div>` : ''}
               </div>
             </div>
           `).join('')}
@@ -2591,8 +2606,10 @@ Generate a warm-up overview. Return ONLY valid JSON:
 
         <div class="card-title">Grammar Pattern — ${warmupData.grammar.pattern}</div>
         <div style="font-size:13px;color:var(--text-dim);margin-bottom:6px;">${warmupData.grammar.explanation}</div>
-        <div style="font-family:'Noto Serif TC',serif;font-size:16px;color:var(--text-dim);">
-          ${warmupData.grammar.example} ${listenBtn(warmupData.grammar.example)}
+        <div class="hover-sentence">
+          <span style="font-family:'Noto Serif TC',serif;font-size:16px;color:var(--text-dim);">${warmupData.grammar.example}</span>
+          ${listenBtn(warmupData.grammar.example)}
+          ${warmupData.grammar.example_en ? `<div class="hover-en">${warmupData.grammar.example_en}</div>` : ''}
         </div>
       </div>
     `;
@@ -3358,21 +3375,21 @@ function playListenWarmup(text, onComplete) {
     .trim()
     .slice(0, 500) || text.slice(0, 300);
 
-  if (isGoogleVoice()) {
-    // Split into sentences of max 150 chars each for Google TTS limit
-    const sentences = splitIntoSentences(speakText, 150);
-    playGoogleTtsSentences(sentences, 0, onComplete);
-  } else {
-    if (!window.speechSynthesis) { onComplete(); return; }
-    const utt = new SpeechSynthesisUtterance(speakText);
-    utt.lang = 'zh-TW';
-    utt.rate = 0.85;
-    const voice = getVoice();
-    if (voice) utt.voice = voice;
-    utt.onend = onComplete;
-    utt.onerror = onComplete;
-    window.speechSynthesis.speak(utt);
-  }
+  // Always use local Web Speech for warmup — handles long text natively
+  // Google Translate is for short items only (vocab, sentences, roleplay)
+  if (!window.speechSynthesis) { onComplete(); return; }
+  const utt = new SpeechSynthesisUtterance(speakText);
+  utt.lang = 'zh-TW';
+  utt.rate = 0.85;
+  // Use local zh-TW voice even if Google is selected as default
+  const voices = window.speechSynthesis.getVoices();
+  const localVoice = voices.find(v => v.lang === 'zh-TW') ||
+                     voices.find(v => v.lang.startsWith('zh')) ||
+                     null;
+  if (localVoice) utt.voice = localVoice;
+  utt.onend = onComplete;
+  utt.onerror = onComplete;
+  window.speechSynthesis.speak(utt);
 }
 
 function splitIntoSentences(text, maxLen) {
