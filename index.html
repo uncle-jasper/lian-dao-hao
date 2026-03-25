@@ -987,15 +987,26 @@
   }
   .bank-item .example {
     font-family: 'Noto Serif TC', serif;
-    font-size: 13px;
-    color: var(--text-muted);
-    line-height: 1.6;
-    margin-top: 4px;
-    padding-top: 4px;
+    font-size: 16px;
+    color: var(--text-dim);
+    line-height: 1.7;
+    margin-top: 8px;
+    padding-top: 8px;
     border-top: 1px solid var(--border);
     display: none;
+    cursor: default;
   }
   .bank-item .example.loaded { display: block; }
+  .bank-item .example-en {
+    font-family: 'Spectral', serif;
+    font-size: 12px;
+    font-style: italic;
+    color: var(--text-muted);
+    margin-top: 3px;
+    display: none;
+    line-height: 1.5;
+  }
+  .bank-item .example:hover .example-en { display: block; }
   .bank-item .lookup-status {
     font-family: 'JetBrains Mono', monospace;
     font-size: 10px;
@@ -3198,11 +3209,23 @@ async function generateBankExample(zh, item) {
   try {
     const result = await callClaude([{
       role: 'user',
-      content: `Write one short, natural example sentence in Traditional Chinese using the word "${zh}". The sentence should be at TOCFL level 3-4 (intermediate-upper intermediate). Reply with ONLY the Chinese sentence, nothing else — no pinyin, no English, no punctuation outside the sentence itself.`
-    }], 'You are a Taiwanese Mandarin language expert. Use Traditional Chinese characters only. Be concise.', 120);
-    const sentence = result.trim();
+      content: `For the word "${zh}", provide:
+1. One short natural example sentence in Traditional Chinese at TOCFL 3-4 level
+2. An English translation of that sentence
+
+Reply in this exact format with nothing else:
+ZH: [Chinese sentence]
+EN: [English translation]`
+    }], 'You are a Taiwanese Mandarin language expert. Use Traditional Chinese characters only. Be concise.', 150);
+
+    const zhMatch = result.match(/ZH:\s*(.+)/);
+    const enMatch = result.match(/EN:\s*(.+)/);
+    const sentence = zhMatch?.[1]?.trim();
+    const translation = enMatch?.[1]?.trim();
+
     if (sentence && isChinese(sentence)) {
       item.example = sentence;
+      item.exampleEn = translation || '';
       localStorage.setItem('mc_bank', JSON.stringify(state.bank));
       renderBank();
     }
@@ -3236,7 +3259,12 @@ function renderBank() {
         <span class="remove-bank" onclick="removeBankItem(${i})">✕</span>
       </div>
       ${item.en ? `<div class="en">${item.en}</div>` : '<div class="lookup-status">Looking up definition…</div>'}
-      ${item.example ? `<div class="example loaded">${item.example}</div>` : ''}
+      ${item.example ? `
+        <div class="example loaded">
+          <span>${item.example}</span>
+          ${listenBtn(item.example)}
+          ${item.exampleEn ? `<div class="example-en">${item.exampleEn}</div>` : ''}
+        </div>` : ''}
     </div>
   `).join('');
 
@@ -3254,8 +3282,8 @@ function renderBank() {
         }
       });
     }
-    // Generate example sentence for items that don't have one
-    if (!item.example && isChinese(item.zh) && state.anthropicKey) {
+    // Generate example sentence for items that don't have one or are missing English translation
+    if ((!item.example || !item.exampleEn) && isChinese(item.zh) && state.anthropicKey) {
       generateBankExample(item.zh, item);
     }
   });
