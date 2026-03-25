@@ -1607,7 +1607,7 @@
             <select id="pref-voice" style="flex:1;"></select>
             <button class="btn sm" onclick="previewVoice()">Preview</button>
           </div>
-          <div class="hint">Used for all listen buttons and auto-speak. Populated from voices installed on your device.</div>
+          <div class="hint">Google Translate is used for vocab, sentences, and roleplay. Meijia is used for the listening warm-up (handles long text better). For best results install <strong style="color:var(--text)">Meijia Premium</strong> — System Settings → Accessibility → Spoken Content → Manage Voices → Chinese (Taiwan).</div>
         </div>
         <div class="input-group">
           <label class="input-label" style="display:flex;align-items:center;gap:10px;cursor:pointer;">
@@ -3210,28 +3210,48 @@ function populateVoices() {
 
   function loadVoices() {
     ttsVoices = window.speechSynthesis.getVoices();
-    const zhVoices = ttsVoices.filter(v =>
-      v.lang.startsWith('zh') || v.lang.includes('TW') || v.lang.includes('HK')
-    );
-    const allVoices = zhVoices.length > 0 ? zhVoices : ttsVoices;
 
-    // Google Translate option at top — only if Worker is configured
+    // Only show Meijia voices (Premium first, then Enhanced, then standard)
+    const meijia = ttsVoices.filter(v => v.name.toLowerCase().includes('meijia'));
+    const premium = meijia.filter(v => v.name.toLowerCase().includes('premium'));
+    const enhanced = meijia.filter(v => v.name.toLowerCase().includes('enhanced'));
+    const standard = meijia.filter(v =>
+      !v.name.toLowerCase().includes('premium') && !v.name.toLowerCase().includes('enhanced')
+    );
+    const orderedMeijia = [...premium, ...enhanced, ...standard];
+
+    // Google Translate option — only if Worker configured
     const googleOption = state.prefs.workerUrl
-      ? `<option value="${GOOGLE_TTS_VOICE}" ${state.prefs.voiceName === GOOGLE_TTS_VOICE ? 'selected' : ''}>🌐 Google Translate (recommended)</option>`
+      ? `<option value="${GOOGLE_TTS_VOICE}" ${state.prefs.voiceName === GOOGLE_TTS_VOICE ? 'selected' : ''}>🌐 Google Translate</option>`
       : '';
 
-    select.innerHTML = googleOption + allVoices.map(v =>
-      `<option value="${v.name}" ${v.name === state.prefs.voiceName ? 'selected' : ''}>${v.name} (${v.lang})</option>`
-    ).join('');
+    const meijiaOptions = orderedMeijia.map(v => {
+      const label = v.name.includes('Premium') ? '⭐ ' + v.name :
+                    v.name.includes('Enhanced') ? '✦ ' + v.name : v.name;
+      return `<option value="${v.name}" ${v.name === state.prefs.voiceName ? 'selected' : ''}>${label}</option>`;
+    }).join('');
 
-    // Auto-select Google Translate if Worker is configured and no preference saved
-    if (!state.prefs.voiceName && state.prefs.workerUrl) {
-      select.value = GOOGLE_TTS_VOICE;
-      state.prefs.voiceName = GOOGLE_TTS_VOICE;
-    } else if (!state.prefs.voiceName && zhVoices.length > 0) {
-      const twVoice = zhVoices.find(v => v.lang === 'zh-TW') || zhVoices[0];
-      select.value = twVoice.name;
-      state.prefs.voiceName = twVoice.name;
+    const noVoicesMsg = !state.prefs.workerUrl && orderedMeijia.length === 0
+      ? `<option value="">No Meijia voice found — install from System Settings → Accessibility → Spoken Content</option>`
+      : '';
+
+    select.innerHTML = googleOption + meijiaOptions + noVoicesMsg;
+
+    // Auto-select best available in order: Google Translate > Meijia Premium > Meijia Enhanced > Meijia
+    if (!state.prefs.voiceName) {
+      if (state.prefs.workerUrl) {
+        select.value = GOOGLE_TTS_VOICE;
+        state.prefs.voiceName = GOOGLE_TTS_VOICE;
+      } else if (premium.length > 0) {
+        select.value = premium[0].name;
+        state.prefs.voiceName = premium[0].name;
+      } else if (enhanced.length > 0) {
+        select.value = enhanced[0].name;
+        state.prefs.voiceName = enhanced[0].name;
+      } else if (standard.length > 0) {
+        select.value = standard[0].name;
+        state.prefs.voiceName = standard[0].name;
+      }
     }
   }
 
@@ -3376,17 +3396,21 @@ function playListenWarmup(text, onComplete) {
     .slice(0, 500) || text.slice(0, 300);
 
   // Always use local Web Speech for warmup — handles long text natively
-  // Google Translate is for short items only (vocab, sentences, roleplay)
+  // Prefer Meijia Premium/Enhanced regardless of what's selected as default voice
   if (!window.speechSynthesis) { onComplete(); return; }
   const utt = new SpeechSynthesisUtterance(speakText);
   utt.lang = 'zh-TW';
   utt.rate = 0.85;
-  // Use local zh-TW voice even if Google is selected as default
   const voices = window.speechSynthesis.getVoices();
-  const localVoice = voices.find(v => v.lang === 'zh-TW') ||
-                     voices.find(v => v.lang.startsWith('zh')) ||
-                     null;
-  if (localVoice) utt.voice = localVoice;
+  const meijia = voices.filter(v => v.name.toLowerCase().includes('meijia'));
+  const warmupVoice =
+    meijia.find(v => v.name.toLowerCase().includes('premium')) ||
+    meijia.find(v => v.name.toLowerCase().includes('enhanced')) ||
+    meijia[0] ||
+    voices.find(v => v.lang === 'zh-TW') ||
+    voices.find(v => v.lang.startsWith('zh')) ||
+    null;
+  if (warmupVoice) utt.voice = warmupVoice;
   utt.onend = onComplete;
   utt.onerror = onComplete;
   window.speechSynthesis.speak(utt);
