@@ -897,31 +897,11 @@
     color: var(--green);
   }
 
-  /* Repeat button */
-  .repeat-btn {
-    display: none;
-    align-items: center;
-    gap: 5px;
-    padding: 3px 9px;
-    border-radius: 4px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--text-muted);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    cursor: pointer;
-    transition: all 0.15s;
-    margin-left: 4px;
-    vertical-align: middle;
-  }
-  .repeat-btn.visible { display: inline-flex; }
-  .repeat-btn:hover { border-color: var(--blue); color: var(--blue); }
-
   /* Highlight-to-add popover */
   #add-to-bank-popover {
     position: fixed;
+    top: -9999px;
+    left: -9999px;
     background: var(--bg2);
     border: 1px solid var(--accent-dim);
     border-radius: 8px;
@@ -929,12 +909,13 @@
     display: none;
     flex-direction: column;
     gap: 6px;
-    z-index: 1000;
+    z-index: 9999;
     box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     min-width: 180px;
-    animation: fadeIn 0.15s ease;
   }
-  #add-to-bank-popover.visible { display: flex; }
+  #add-to-bank-popover.visible {
+    display: flex;
+  }
   .popover-word {
     font-family: 'Noto Serif TC', serif;
     font-size: 20px;
@@ -1107,23 +1088,6 @@
 </style>
 </head>
 <body>
-
-<!-- HIGHLIGHT-TO-ADD POPOVER -->
-<div id="add-to-bank-popover">
-  <div class="popover-word" id="popover-word"></div>
-  <div class="popover-pinyin" id="popover-pinyin"></div>
-  <div class="popover-def" id="popover-def"></div>
-  <div style="display:flex;gap:6px;margin-top:4px;">
-    <button class="btn primary sm" id="popover-add-btn" onclick="confirmAddToBank()">Add to Bank</button>
-    <button class="btn sm" onclick="hidePopover()">✕</button>
-    <button class="listen-btn sm" id="popover-listen-btn" onclick="speak(document.getElementById('popover-word').textContent, this)" style="padding:4px 8px;">
-      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:11px;height:11px;">
-        <path d="M3 5.5v5l4 2.5V3L3 5.5z" fill="currentColor"/>
-        <path d="M10 5.5c1.1.6 1.8 1.7 1.8 3s-.7 2.4-1.8 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-      </svg>
-    </button>
-  </div>
-</div>
 
 <!-- SIDEBAR -->
 <div id="sidebar">
@@ -1844,11 +1808,6 @@ function advanceChunk() {
   }
   return false;
 }
-
-// ═══════════════════════════════════════════════════
-// REPEAT BUTTON
-// ═══════════════════════════════════════════════════
-let lastSpokenText = '';
 
 // Live chunk detection on paste
 function checkForChunks(textareaId) {
@@ -2902,10 +2861,6 @@ function getVoice() {
 function speak(text, btn) {
   if (!window.speechSynthesis) return;
 
-  // Track for repeat
-  lastSpokenText = text;
-
-  // Cancel and use a short delay — fixes browser TTS stuck-after-first-utterance bug
   window.speechSynthesis.cancel();
 
   // If already speaking this button, just stop
@@ -2917,7 +2872,6 @@ function speak(text, btn) {
 
   if (activeTtsBtn) { activeTtsBtn.classList.remove('speaking'); activeTtsBtn = null; }
 
-  // Small delay lets the synthesis engine reset after cancel()
   setTimeout(() => {
     const utt = new SpeechSynthesisUtterance(text);
     utt.lang = 'zh-TW';
@@ -2929,21 +2883,7 @@ function speak(text, btn) {
     if (btn) {
       btn.classList.add('speaking');
       activeTtsBtn = btn;
-      utt.onend = () => {
-        btn.classList.remove('speaking');
-        activeTtsBtn = null;
-        let repeatBtn = btn.parentElement?.querySelector('.repeat-btn');
-        if (!repeatBtn) {
-          repeatBtn = document.createElement('button');
-          repeatBtn.className = 'repeat-btn visible';
-          repeatBtn.title = 'Repeat';
-          repeatBtn.innerHTML = '↺ Repeat';
-          repeatBtn.onclick = () => speak(lastSpokenText, btn);
-          btn.after(repeatBtn);
-        } else {
-          repeatBtn.classList.add('visible');
-        }
-      };
+      utt.onend = () => { btn.classList.remove('speaking'); activeTtsBtn = null; };
       utt.onerror = () => { btn.classList.remove('speaking'); activeTtsBtn = null; };
     }
 
@@ -3134,13 +3074,14 @@ function showPopover(word, x, y) {
   defEl.textContent = '';
   defEl.classList.remove('loaded');
 
-  // Position near selection
-  const pw = 200;
+  // Set position before making visible to avoid flash
+  const pw = 210;
   const left = Math.min(x, window.innerWidth - pw - 16);
-  const top = y + 8;
+  const top = Math.min(y + 8, window.innerHeight - 160);
   pop.style.left = left + 'px';
   pop.style.top = top + 'px';
-  pop.classList.add('visible');
+  // Use requestAnimationFrame so position is applied before display changes
+  requestAnimationFrame(() => pop.classList.add('visible'));
 
   // Async dictionary lookup
   lookupWord(popoverWord).then(data => {
@@ -3155,7 +3096,15 @@ function showPopover(word, x, y) {
 }
 
 function hidePopover() {
-  document.getElementById('add-to-bank-popover').classList.remove('visible');
+  const pop = document.getElementById('add-to-bank-popover');
+  pop.classList.remove('visible');
+  // Move off-screen after transition
+  setTimeout(() => {
+    if (!pop.classList.contains('visible')) {
+      pop.style.left = '-9999px';
+      pop.style.top = '-9999px';
+    }
+  }, 150);
   popoverWord = '';
   popoverDictData = null;
 }
@@ -3177,20 +3126,29 @@ document.addEventListener('mouseup', (e) => {
   // Don't show when clicking popover itself
   if (e.target.closest('#add-to-bank-popover')) return;
 
-  const sel = window.getSelection();
-  const text = sel?.toString().trim();
-  if (text && text.length >= 1 && text.length <= 6 && isChinese(text)) {
-    const range = sel.getRangeAt(0);
-    const rect = range.getBoundingClientRect();
-    showPopover(text, rect.left + window.scrollX, rect.bottom + window.scrollY);
-  } else if (text === '') {
-    hidePopover();
-  }
+  // Small delay so selection is fully committed
+  setTimeout(() => {
+    const sel = window.getSelection();
+    const text = sel?.toString().trim();
+    if (text && text.length >= 1 && text.length <= 6 && isChinese(text)) {
+      const range = sel.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      // Guard against zero rect (selection outside visible content)
+      if (rect.width === 0 && rect.height === 0) return;
+      if (rect.bottom === 0 && rect.left === 0) return;
+      showPopover(text, rect.left, rect.bottom);
+    } else {
+      hidePopover();
+    }
+  }, 10);
 });
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') hidePopover();
 });
+
+// Hide popover on scroll
+document.getElementById('content')?.addEventListener('scroll', hidePopover);
 
 // ═══════════════════════════════════════════════════
 // STRUGGLE BANK — EXTENDED
@@ -3202,7 +3160,7 @@ function addBankItem() {
   addBankItemWithData(zh, en, null);
   document.getElementById('bank-zh').value = '';
   document.getElementById('bank-en').value = '';
-  // Trigger async lookup for manually added items
+  // Trigger async dictionary lookup for pinyin/definition
   if (zh && isChinese(zh)) {
     lookupWord(zh).then(data => {
       if (!data) return;
@@ -3210,7 +3168,6 @@ function addBankItem() {
       if (item) {
         if (!item.en && data.defs?.length) item.en = data.defs.slice(0,2).join('; ');
         if (!item.pinyin && data.pinyin) item.pinyin = data.pinyin;
-        if (!item.example && data.example) item.example = data.example;
         localStorage.setItem('mc_bank', JSON.stringify(state.bank));
         renderBank();
       }
@@ -3224,12 +3181,34 @@ function addBankItemWithData(zh, en, dictData) {
     zh,
     en: en || dictData?.defs?.slice(0,2).join('; ') || '',
     pinyin: dictData?.pinyin || '',
-    example: dictData?.example || '',
+    example: '',
     addedAt: Date.now(),
   };
   state.bank.push(item);
   localStorage.setItem('mc_bank', JSON.stringify(state.bank));
   renderBank();
+
+  // Generate example sentence via Claude async
+  if (state.anthropicKey && zh && isChinese(zh)) {
+    generateBankExample(zh, item);
+  }
+}
+
+async function generateBankExample(zh, item) {
+  try {
+    const result = await callClaude([{
+      role: 'user',
+      content: `Write one short, natural example sentence in Traditional Chinese using the word "${zh}". The sentence should be at TOCFL level 3-4 (intermediate-upper intermediate). Reply with ONLY the Chinese sentence, nothing else — no pinyin, no English, no punctuation outside the sentence itself.`
+    }], 'You are a Taiwanese Mandarin language expert. Use Traditional Chinese characters only. Be concise.', 120);
+    const sentence = result.trim();
+    if (sentence && isChinese(sentence)) {
+      item.example = sentence;
+      localStorage.setItem('mc_bank', JSON.stringify(state.bank));
+      renderBank();
+    }
+  } catch(e) {
+    // silently fail — example is optional
+  }
 }
 
 function removeBankItem(index) {
@@ -3261,20 +3240,23 @@ function renderBank() {
     </div>
   `).join('');
 
-  // Async lookup for items missing data
-  state.bank.forEach((item, i) => {
+  // Async lookup for items missing definition/pinyin
+  state.bank.forEach((item) => {
     if ((!item.en || !item.pinyin) && isChinese(item.zh) && state.prefs.workerUrl) {
       lookupWord(item.zh).then(data => {
         if (!data) return;
         let changed = false;
         if (!item.en && data.defs?.length) { item.en = data.defs.slice(0,2).join('; '); changed = true; }
         if (!item.pinyin && data.pinyin) { item.pinyin = data.pinyin; changed = true; }
-        if (!item.example && data.example) { item.example = data.example; changed = true; }
         if (changed) {
           localStorage.setItem('mc_bank', JSON.stringify(state.bank));
           renderBank();
         }
       });
+    }
+    // Generate example sentence for items that don't have one
+    if (!item.example && isChinese(item.zh) && state.anthropicKey) {
+      generateBankExample(item.zh, item);
     }
   });
 }
@@ -3361,5 +3343,22 @@ function initPWA() {
 init();
 initPWA();
 </script>
+<!-- HIGHLIGHT-TO-ADD POPOVER — must be last in body so it renders on top -->
+<div id="add-to-bank-popover">
+  <div class="popover-word" id="popover-word"></div>
+  <div class="popover-pinyin" id="popover-pinyin"></div>
+  <div class="popover-def" id="popover-def"></div>
+  <div style="display:flex;gap:6px;margin-top:4px;">
+    <button class="btn primary sm" id="popover-add-btn" onclick="confirmAddToBank()">Add to Bank</button>
+    <button class="btn sm" onclick="hidePopover()">✕</button>
+    <button class="listen-btn sm" id="popover-listen-btn" onclick="speak(document.getElementById('popover-word').textContent, this)" style="padding:4px 8px;">
+      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:11px;height:11px;">
+        <path d="M3 5.5v5l4 2.5V3L3 5.5z" fill="currentColor"/>
+        <path d="M10 5.5c1.1.6 1.8 1.7 1.8 3s-.7 2.4-1.8 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
 </body>
 </html>
