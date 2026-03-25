@@ -130,38 +130,37 @@
   .nav-item.active .step-dot { background: var(--accent); }
   .nav-item.completed .step-dot { background: var(--green); }
 
-  .session-timer {
+  .chunk-progress {
     margin: auto 0 0;
     padding: 16px 20px 0;
     border-top: 1px solid var(--border);
   }
-  .timer-label {
+  .chunk-progress-label {
     font-family: 'JetBrains Mono', monospace;
     font-size: 9px;
     text-transform: uppercase;
     letter-spacing: 0.12em;
     color: var(--text-muted);
-    margin-bottom: 4px;
+    margin-bottom: 6px;
   }
-  .timer-display {
+  .chunk-progress-text {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 26px;
+    font-size: 13px;
     color: var(--accent);
-    letter-spacing: 0.05em;
+    line-height: 1.4;
   }
-  .timer-bar {
+  .chunk-progress-bar {
     height: 2px;
     background: var(--border);
     border-radius: 1px;
     margin-top: 8px;
     overflow: hidden;
   }
-  .timer-fill {
+  .chunk-progress-fill {
     height: 100%;
     background: var(--accent);
     border-radius: 1px;
-    transition: width 1s linear;
-    width: 0%;
+    transition: width 0.3s ease;
   }
 
   /* ── MAIN ── */
@@ -1233,10 +1232,10 @@
     </div>
   </div>
 
-  <div class="session-timer">
-    <div class="timer-label">Session Time</div>
-    <div class="timer-display" id="timer-display">00:00</div>
-    <div class="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
+  <div class="chunk-progress">
+    <div class="chunk-progress-label">Content Progress</div>
+    <div class="chunk-progress-text" id="chunk-progress-text">—</div>
+    <div class="chunk-progress-bar"><div class="chunk-progress-fill" id="chunk-progress-fill" style="width:0%"></div></div>
   </div>
 </div>
 
@@ -1353,14 +1352,6 @@
           <label class="input-label">What should this session emphasize?</label>
           <textarea id="session-focus" placeholder="e.g. 'I keep confusing 而且 and 但是. My listening comprehension drops when speech is fast. I struggle with measure words for flat objects.'" style="min-height:70px;"></textarea>
           <div class="hint">Optional — helps Claude tailor the challenges toward your weakest points.</div>
-        </div>
-        <div class="input-group">
-          <label class="input-label">Session length</label>
-          <select id="session-length">
-            <option value="15">15 minutes</option>
-            <option value="30" selected>30 minutes</option>
-            <option value="45">45 minutes</option>
-          </select>
         </div>
       </div>
 
@@ -1702,6 +1693,7 @@ function init() {
   renderBank();
   updateNavState();
   checkResumeCard();
+  updateChunkProgress();
 
   if (!state.anthropicKey) {
     showScreen('settings');
@@ -2358,22 +2350,23 @@ function flagItem(zh, en) {
 // ═══════════════════════════════════════════════════
 // TIMER
 // ═══════════════════════════════════════════════════
-let timerInterval = null;
+function updateChunkProgress() {
+  const textEl = document.getElementById('chunk-progress-text');
+  const fillEl = document.getElementById('chunk-progress-fill');
+  if (!textEl || !fillEl) return;
 
-function startTimer(minutes) {
-  const totalSeconds = minutes * 60;
-  const start = Date.now();
-  state.session.startTime = start;
+  const list = state.chunks.list;
+  if (!list || list.length === 0) {
+    textEl.textContent = '—';
+    fillEl.style.width = '0%';
+    return;
+  }
 
-  timerInterval = setInterval(() => {
-    const elapsed = Math.floor((Date.now() - start) / 1000);
-    const remaining = Math.max(0, totalSeconds - elapsed);
-    const m = Math.floor(remaining / 60).toString().padStart(2,'0');
-    const s = (remaining % 60).toString().padStart(2,'0');
-    document.getElementById('timer-display').textContent = `${m}:${s}`;
-    document.getElementById('timer-fill').style.width = `${(elapsed / totalSeconds) * 100}%`;
-    if (remaining === 0) clearInterval(timerInterval);
-  }, 1000);
+  const current = state.chunks.currentIndex + 1;
+  const total = list.length;
+  const pct = Math.round((state.chunks.currentIndex / total) * 100);
+  textEl.textContent = `Chunk ${current} of ${total}`;
+  fillEl.style.width = `${pct}%`;
 }
 
 // ═══════════════════════════════════════════════════
@@ -2497,16 +2490,15 @@ async function startSession() {
 
   state.session.content = content;
   state.session.focus = document.getElementById('session-focus').value.trim();
-  state.session.length = parseInt(document.getElementById('session-length').value);
   state.session.active = true;
   state.session.completedSegments = [];
   state.session.flaggedItems = [];
   state.session.comprehensionAnswers = [];
   state.session.roleplayHistory = [];
 
-  startTimer(state.session.length);
   showScreen('warmup');
   setNavActive('warmup');
+  updateChunkProgress();
   generateWarmup();
 }
 
@@ -3141,7 +3133,6 @@ function renderReview() {
 
   state.session.completedSegments.push('review');
   updateNavState();
-  clearInterval(timerInterval);
 
   // Advance chunk index now that this session is complete
   if (state.chunks.list.length > 0) {
@@ -3159,7 +3150,6 @@ function continueNextChunk() {
   const nextContent = state.chunks.list[state.chunks.currentIndex];
   state.session.content = nextContent;
   state.session.focus = '';
-  state.session.length = parseInt(document.getElementById('session-length').value) || 30;
   state.session.active = true;
   state.session.completedSegments = [];
   state.session.flaggedItems = [];
@@ -3168,25 +3158,21 @@ function continueNextChunk() {
   comprehensionData = null;
   vocabData = null;
   roleplayScenario = null;
-  document.getElementById('timer-display').textContent = '00:00';
-  document.getElementById('timer-fill').style.width = '0%';
-  startTimer(state.session.length);
   showScreen('warmup');
   setNavActive('warmup');
+  updateChunkProgress();
   generateWarmup();
 }
 
 function newSession() {
   state.session = {
-    active: false, startTime: null, length: 30, content: '', contentType: '',
+    active: false, content: '', contentType: '',
     focus: '', currentSegment: null, completedSegments: [], flaggedItems: [],
     comprehensionAnswers: [], vocabUsed: [], roleplayHistory: [], sessionData: null,
   };
   comprehensionData = null;
   vocabData = null;
   roleplayScenario = null;
-  document.getElementById('timer-display').textContent = '00:00';
-  document.getElementById('timer-fill').style.width = '0%';
   // Reset chunk selector UI
   const chunkArea = document.getElementById('chunk-selector-area');
   if (chunkArea) { chunkArea.style.display = 'none'; chunkArea._selectedChunk = null; }
@@ -3194,6 +3180,7 @@ function newSession() {
   showScreen('setup');
   updateNavState();
   checkResumeCard();
+  updateChunkProgress();
 }
 
 // ═══════════════════════════════════════════════════
