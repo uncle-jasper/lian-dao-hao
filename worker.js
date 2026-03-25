@@ -121,6 +121,39 @@ export default {
       }
     }
 
+    // ── Google Translate TTS proxy ────────────────────
+    if (url.pathname === '/tts') {
+      const text = url.searchParams.get('text');
+      const lang = url.searchParams.get('lang') || 'zh-TW';
+      if (!text) return json({ error: 'Missing text parameter' }, 400);
+
+      try {
+        const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${encodeURIComponent(lang)}&client=tw-ob&ttsspeed=0.85`;
+        const ttsRes = await fetch(ttsUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+            'Referer': 'https://translate.google.com/',
+          }
+        });
+
+        if (!ttsRes.ok) {
+          return json({ error: `TTS fetch failed: ${ttsRes.status}` }, ttsRes.status);
+        }
+
+        const audioData = await ttsRes.arrayBuffer();
+        return new Response(audioData, {
+          status: 200,
+          headers: {
+            'Content-Type': 'audio/mpeg',
+            'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
+            'Cache-Control': 'public, max-age=3600',
+          }
+        });
+      } catch (err) {
+        return json({ error: err.message }, 500);
+      }
+    }
+
     return json({ error: 'Unknown endpoint' }, 404);
   }
 };

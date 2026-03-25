@@ -2007,6 +2007,8 @@ function checkForChunks(textareaId) {
     document.getElementById('start-btn').textContent = `Begin Session — Chunk ${index + 1} of ${total} →`;
   });
   selectChunk(state.chunks.currentIndex);
+  // Scroll chunk selector into view so user sees it
+  setTimeout(() => chunkArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
 }
 
 const COUNTER_MAP = {
@@ -2092,44 +2094,47 @@ async function fetchYouTubeTranscript() {
   textarea.value = '';
   textarea.placeholder = 'Fetching transcript…';
 
-  try {
-    const res = await fetch(`${state.prefs.workerUrl}/transcript?url=${encodeURIComponent(url)}`);
-    const data = await res.json();
+  // Try up to 2 times — Supadata can be intermittently flaky
+  let lastError = '';
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      if (attempt === 2) textarea.placeholder = 'Retrying…';
+      const res = await fetch(`${state.prefs.workerUrl}/transcript?url=${encodeURIComponent(url)}`);
+      const data = await res.json();
 
-    if (!res.ok || data.error) {
-      textarea.value = '';
-      textarea.placeholder = `Could not fetch: ${data.error || 'Unknown error'} — paste transcript manually.`;
-      return;
-    }
-
-    textarea.value = data.transcript || '';
-    updateCounter('yt-transcript', 'yt-counter');
-    checkForChunks('yt-transcript');
-
-    // Show language note if zh-TW wasn't available
-    if (data.note) {
-      const noteEl = document.getElementById('yt-warning');
-      if (noteEl) {
-        noteEl.textContent = `⚠ ${data.note}`;
-        noteEl.classList.add('visible');
+      if (!res.ok || data.error) {
+        lastError = data.error || 'Unknown error';
+        // Don't retry 404 — video genuinely has no CC subtitles
+        if (res.status === 404) {
+          textarea.placeholder = 'No CC subtitles found for this video — paste transcript manually, or try a video with subtitles enabled.';
+          return;
+        }
+        if (attempt < 2) continue; // retry on other errors
+        textarea.placeholder = `Fetch failed: ${lastError} — paste transcript manually.`;
+        return;
       }
-    }
 
-    // Show available languages if useful
-    if (data.availableLangs && data.availableLangs.length > 1) {
-      const noteEl = document.getElementById('yt-lang-note');
-      if (noteEl) {
-        noteEl.textContent = `Available languages: ${data.availableLangs.join(', ')}`;
-        noteEl.style.display = 'block';
+      textarea.value = data.transcript || '';
+      updateCounter('yt-transcript', 'yt-counter');
+      checkForChunks('yt-transcript');
+
+      if (data.note) {
+        const noteEl = document.getElementById('yt-warning');
+        if (noteEl) { noteEl.textContent = `⚠ ${data.note}`; noteEl.classList.add('visible'); }
       }
-    }
+      if (data.availableLangs && data.availableLangs.length > 1) {
+        const noteEl = document.getElementById('yt-lang-note');
+        if (noteEl) { noteEl.textContent = `Available languages: ${data.availableLangs.join(', ')}`; noteEl.style.display = 'block'; }
+      }
+      return; // success
 
-  } catch(e) {
-    textarea.value = '';
-    textarea.placeholder = `Fetch failed: ${e.message} — paste transcript manually.`;
+    } catch(e) {
+      lastError = e.message;
+      if (attempt < 2) continue;
+      textarea.placeholder = `Network error: ${lastError} — paste transcript manually.`;
+    }
   }
 }
-
 async function testWorker() {
   const url = document.getElementById('worker-url').value.trim().replace(/\/$/, '');
   if (!url) { updateWorkerStatus('error', 'Enter a Worker URL first'); return; }
@@ -2369,7 +2374,7 @@ async function callClaude(messages, systemPrompt, maxTokens = 1500) {
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: maxTokens,
       system: systemPrompt,
       messages,
@@ -3180,6 +3185,8 @@ function newSession() {
 let ttsVoices = [];
 let activeTtsBtn = null;
 
+const GOOGLE_TTS_VOICE = '__google_translate__';
+
 function populateVoices() {
   const select = document.getElementById('pref-voice');
   if (!select) return;
@@ -3190,11 +3197,21 @@ function populateVoices() {
       v.lang.startsWith('zh') || v.lang.includes('TW') || v.lang.includes('HK')
     );
     const allVoices = zhVoices.length > 0 ? zhVoices : ttsVoices;
-    select.innerHTML = allVoices.map(v =>
+
+    // Google Translate option at top — only if Worker is configured
+    const googleOption = state.prefs.workerUrl
+      ? `<option value="${GOOGLE_TTS_VOICE}" ${state.prefs.voiceName === GOOGLE_TTS_VOICE ? 'selected' : ''}>🌐 Google Translate (recommended)</option>`
+      : '';
+
+    select.innerHTML = googleOption + allVoices.map(v =>
       `<option value="${v.name}" ${v.name === state.prefs.voiceName ? 'selected' : ''}>${v.name} (${v.lang})</option>`
     ).join('');
-    if (!state.prefs.voiceName && zhVoices.length > 0) {
-      // Auto-select best zh-TW voice
+
+    // Auto-select Google Translate if Worker is configured and no preference saved
+    if (!state.prefs.voiceName && state.prefs.workerUrl) {
+      select.value = GOOGLE_TTS_VOICE;
+      state.prefs.voiceName = GOOGLE_TTS_VOICE;
+    } else if (!state.prefs.voiceName && zhVoices.length > 0) {
       const twVoice = zhVoices.find(v => v.lang === 'zh-TW') || zhVoices[0];
       select.value = twVoice.name;
       state.prefs.voiceName = twVoice.name;
@@ -3219,20 +3236,65 @@ function getVoice() {
          null;
 }
 
+function isGoogleVoice() {
+  return state.prefs.voiceName === GOOGLE_TTS_VOICE && state.prefs.workerUrl;
+}
+
+let activeAudio = null;
+
 function speak(text, btn) {
-  if (!window.speechSynthesis) return;
-
-  window.speechSynthesis.cancel();
-
-  // If already speaking this button, just stop
-  if (activeTtsBtn === btn && btn) {
-    btn.classList.remove('speaking');
-    activeTtsBtn = null;
-    return;
-  }
-
+  // Stop anything currently playing
+  if (activeAudio) { activeAudio.pause(); activeAudio = null; }
   if (activeTtsBtn) { activeTtsBtn.classList.remove('speaking'); activeTtsBtn = null; }
+  window.speechSynthesis?.cancel();
 
+  // Toggle off if same button
+  if (activeTtsBtn === btn && btn) return;
+
+  if (isGoogleVoice()) {
+    speakGoogle(text, btn);
+  } else {
+    speakLocal(text, btn);
+  }
+}
+
+async function speakGoogle(text, btn) {
+  if (!state.prefs.workerUrl) { speakLocal(text, btn); return; }
+  if (btn) { btn.classList.add('speaking'); activeTtsBtn = btn; }
+
+  // Split long text into sentences
+  const sentences = text.length > 150 ? splitIntoSentences(text, 150) : [text];
+
+  const cleanup = () => {
+    if (btn) { btn.classList.remove('speaking'); activeTtsBtn = null; }
+  };
+
+  try {
+    for (let i = 0; i < sentences.length; i++) {
+      if (activeTtsBtn !== btn && btn) break; // stopped by user
+      const url = `${state.prefs.workerUrl}/tts?text=${encodeURIComponent(sentences[i])}&lang=zh-TW`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('TTS failed');
+      const blob = await res.blob();
+      const audioUrl = URL.createObjectURL(blob);
+      await new Promise((resolve, reject) => {
+        const audio = new Audio(audioUrl);
+        activeAudio = audio;
+        audio.onended = () => { URL.revokeObjectURL(audioUrl); activeAudio = null; resolve(); };
+        audio.onerror = () => { URL.revokeObjectURL(audioUrl); activeAudio = null; reject(); };
+        audio.play();
+      });
+      if (i < sentences.length - 1) await new Promise(r => setTimeout(r, 150));
+    }
+    cleanup();
+  } catch(e) {
+    cleanup();
+    speakLocal(text, btn);
+  }
+}
+
+function speakLocal(text, btn) {
+  if (!window.speechSynthesis) return;
   setTimeout(() => {
     const utt = new SpeechSynthesisUtterance(text);
     utt.lang = 'zh-TW';
@@ -3247,7 +3309,6 @@ function speak(text, btn) {
       utt.onend = () => { btn.classList.remove('speaking'); activeTtsBtn = null; };
       utt.onerror = () => { btn.classList.remove('speaking'); activeTtsBtn = null; };
     }
-
     window.speechSynthesis.speak(utt);
   }, 100);
 }
@@ -3256,17 +3317,7 @@ function previewVoice() {
   const select = document.getElementById('pref-voice');
   if (!select) return;
   state.prefs.voiceName = select.value;
-  // Full reset before preview — fixes stuck TTS in voice selector
-  window.speechSynthesis.cancel();
-  setTimeout(() => {
-    const utt = new SpeechSynthesisUtterance('你好！歡迎使用練到好。');
-    utt.lang = 'zh-TW';
-    utt.rate = 0.9;
-    const voices = window.speechSynthesis.getVoices();
-    const voice = voices.find(v => v.name === state.prefs.voiceName);
-    if (voice) utt.voice = voice;
-    window.speechSynthesis.speak(utt);
-  }, 150);
+  speak('你好！歡迎使用練到好。', null);
 }
 
 // Helper to create a listen button HTML string
@@ -3286,10 +3337,7 @@ function listenBtn(text, extraClass) {
 // LISTENING WARM-UP
 // ═══════════════════════════════════════════════════
 function playListenWarmup(text, onComplete) {
-  if (!state.prefs.listenWarmup || !window.speechSynthesis) {
-    onComplete();
-    return;
-  }
+  if (!state.prefs.listenWarmup) { onComplete(); return; }
 
   const container = document.getElementById('warmup-content');
   container.innerHTML = `
@@ -3301,22 +3349,85 @@ function playListenWarmup(text, onComplete) {
     </div>`;
 
   window._skipWarmup = onComplete;
+  window._warmupCancelled = false;
 
-  // Extract Chinese text only for speaking (strip English/URLs)
-  const speakText = text.replace(/https?:\/\/\S+/g, '').replace(/[a-zA-Z0-9\s]{6,}/g, ' ').trim().slice(0, 600);
+  // Extract Chinese text only, limit to 500 chars
+  const speakText = text
+    .replace(/https?:\/\/\S+/g, '')
+    .replace(/[a-zA-Z0-9\s]{6,}/g, ' ')
+    .trim()
+    .slice(0, 500) || text.slice(0, 300);
 
-  const utt = new SpeechSynthesisUtterance(speakText || text.slice(0, 400));
-  utt.lang = 'zh-TW';
-  utt.rate = 0.85;
-  const voice = getVoice();
-  if (voice) utt.voice = voice;
-  utt.onend = onComplete;
-  utt.onerror = onComplete;
-  window.speechSynthesis.speak(utt);
+  if (isGoogleVoice()) {
+    // Split into sentences of max 150 chars each for Google TTS limit
+    const sentences = splitIntoSentences(speakText, 150);
+    playGoogleTtsSentences(sentences, 0, onComplete);
+  } else {
+    if (!window.speechSynthesis) { onComplete(); return; }
+    const utt = new SpeechSynthesisUtterance(speakText);
+    utt.lang = 'zh-TW';
+    utt.rate = 0.85;
+    const voice = getVoice();
+    if (voice) utt.voice = voice;
+    utt.onend = onComplete;
+    utt.onerror = onComplete;
+    window.speechSynthesis.speak(utt);
+  }
+}
+
+function splitIntoSentences(text, maxLen) {
+  // Split on Chinese sentence-ending punctuation
+  const parts = text.split(/(?<=[。！？，、])/);
+  const sentences = [];
+  let current = '';
+  for (const part of parts) {
+    if ((current + part).length > maxLen) {
+      if (current) sentences.push(current.trim());
+      current = part;
+    } else {
+      current += part;
+    }
+  }
+  if (current.trim()) sentences.push(current.trim());
+  return sentences.filter(s => s.length > 0);
+}
+
+async function playGoogleTtsSentences(sentences, index, onComplete) {
+  if (window._warmupCancelled || index >= sentences.length) {
+    onComplete();
+    return;
+  }
+
+  const sentence = sentences[index];
+  try {
+    const url = `${state.prefs.workerUrl}/tts?text=${encodeURIComponent(sentence)}&lang=zh-TW`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('TTS failed');
+    const blob = await res.blob();
+    const audioUrl = URL.createObjectURL(blob);
+    const audio = new Audio(audioUrl);
+    activeAudio = audio;
+    audio.onended = () => {
+      URL.revokeObjectURL(audioUrl);
+      activeAudio = null;
+      // Small gap between sentences
+      setTimeout(() => playGoogleTtsSentences(sentences, index + 1, onComplete), 200);
+    };
+    audio.onerror = () => {
+      activeAudio = null;
+      playGoogleTtsSentences(sentences, index + 1, onComplete);
+    };
+    audio.play();
+  } catch(e) {
+    // Skip failed sentence and continue
+    playGoogleTtsSentences(sentences, index + 1, onComplete);
+  }
 }
 
 function skipListenWarmup() {
-  window.speechSynthesis.cancel();
+  window._warmupCancelled = true;
+  if (activeAudio) { activeAudio.pause(); activeAudio = null; }
+  window.speechSynthesis?.cancel();
   if (window._skipWarmup) { window._skipWarmup(); window._skipWarmup = null; }
 }
 
