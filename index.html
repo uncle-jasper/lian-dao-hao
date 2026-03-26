@@ -2141,18 +2141,22 @@ function resumeSessionProgress() {
   updateChunkProgress();
   updateNavState();
 
-  // Re-render the segment
-  if (saved.segment === 'comprehension') renderComprehension();
-  else if (saved.segment === 'vocab') renderVocab();
-  else if (saved.segment === 'roleplay') renderRoleplay();
-  else if (saved.segment === 'review') renderReview();
-  else if (saved.segment === 'warmup') {
-    // On resume, skip the listening warmup phase — go straight to card generation
+  // Re-render the segment and trigger any missing generation
+  if (saved.segment === 'comprehension') {
+    if (!comprehensionData) generateComprehension();
+    if (!vocabData) generateVocabChallenges();
+    renderComprehension();
+  } else if (saved.segment === 'vocab') {
+    if (!vocabData) generateVocabChallenges();
+    if (!roleplayScenario) generateRoleplayScenario();
+    renderVocab();
+  } else if (saved.segment === 'roleplay') {
+    if (!roleplayScenario) generateRoleplayScenario();
+    renderRoleplay();
+  } else if (saved.segment === 'review') {
+    renderReview();
+  } else if (saved.segment === 'warmup') {
     state.session._skipListenWarmup = true;
-    showScreen('warmup');
-    setNavActive('warmup');
-    updateChunkProgress();
-    updateNavState();
     generateWarmup();
   }
 
