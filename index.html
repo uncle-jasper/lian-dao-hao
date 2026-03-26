@@ -3928,6 +3928,13 @@ function playListenWarmup(text, onComplete) {
   }
 }
 
+function warmupBreakdownContinue() {
+  const fn = window._breakdownOnComplete;
+  window._breakdownOnComplete = null;
+  window.warmupOnComplete = null;
+  if (fn) fn();
+}
+
 async function showBreakdown() {
   window.speechSynthesis?.cancel();
   const container = document.getElementById('warmup-content');
@@ -3963,19 +3970,12 @@ async function showBreakdown() {
       <div class="breakdown-title">逐句分析 — Sentence Breakdown</div>
     </div>
     <div class="action-row" style="margin-top:4px;">
-      <button class="btn primary" id="breakdown-continue-btn">Continue → Warm-up Cards</button>
+      <button class="btn primary" onclick="warmupBreakdownContinue()">Continue → Warm-up Cards</button>
     </div>`;
 
-  // Wire Continue button immediately — works even if translation fetch fails
-  const continueBtn = document.getElementById('breakdown-continue-btn');
-  if (continueBtn) {
-    continueBtn.addEventListener('click', () => {
-      window.warmupOnComplete = null;
-      if (onComplete) onComplete();
-    });
-  }
+  // Store onComplete so onclick handler can reach it
+  window._breakdownOnComplete = onComplete;
 
-  // Render sentences — call with translations array (empty = no hover English yet)
   function renderRows(translations) {
     const panel = document.getElementById('breakdown-panel');
     if (!panel) return;
