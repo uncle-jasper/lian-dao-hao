@@ -2910,8 +2910,10 @@ async function generateWarmup() {
 
   // Play listening warm-up first if enabled
   await new Promise(resolve => {
+    window._warmupResolve = resolve;
     playListenWarmup(state.session.content, resolve);
   });
+  window._warmupResolve = null;
 
   container.innerHTML = `<div class="status-bar"><div class="loading-dots"><span></span><span></span><span></span></div> Generating warm-up from your content...</div>`;
 
@@ -3977,12 +3979,10 @@ function splitIntoSentences(text, maxLen) {
 
 
 function warmupBreakdownContinue() {
-  console.log('warmupBreakdownContinue called, _breakdownOnComplete:', typeof window._breakdownOnComplete, 'warmupOnComplete:', typeof window.warmupOnComplete);
-  const fn = window._breakdownOnComplete || window.warmupOnComplete;
+  const fn = window._breakdownOnComplete || window.warmupOnComplete || window._warmupResolve;
   window._breakdownOnComplete = null;
   window.warmupOnComplete = null;
-  if (fn) { console.log('calling fn'); fn(); }
-  else { console.log('no fn found — trying direct advance'); goToSegment('comprehension'); }
+  if (fn) fn();
 }
 
 async function showBreakdown() {
@@ -4079,7 +4079,9 @@ function skipListenWarmup() {
   window._warmupCancelled = true;
   if (activeAudio) { activeAudio.pause(); activeAudio = null; }
   window.speechSynthesis?.cancel();
-  if (window.warmupOnComplete) { window.warmupOnComplete(); window.warmupOnComplete = null; }
+  const fn = window.warmupOnComplete || window._warmupResolve;
+  window.warmupOnComplete = null;
+  if (fn) fn();
 }
 
 // ═══════════════════════════════════════════════════
