@@ -2146,7 +2146,15 @@ function resumeSessionProgress() {
   else if (saved.segment === 'vocab') renderVocab();
   else if (saved.segment === 'roleplay') renderRoleplay();
   else if (saved.segment === 'review') renderReview();
-  else if (saved.segment === 'warmup') generateWarmup();
+  else if (saved.segment === 'warmup') {
+    // On resume, skip the listening warmup phase — go straight to card generation
+    state.session._skipListenWarmup = true;
+    showScreen('warmup');
+    setNavActive('warmup');
+    updateChunkProgress();
+    updateNavState();
+    generateWarmup();
+  }
 
   document.getElementById('session-resume-card').style.display = 'none';
 }
@@ -3896,7 +3904,11 @@ function getCurrentWarmupRate() {
 }
 
 function playListenWarmup(text, onComplete) {
-  if (!state.prefs.listenWarmup) { onComplete(); return; }
+  if (!state.prefs.listenWarmup || state.session._skipListenWarmup) {
+    state.session._skipListenWarmup = false;
+    onComplete();
+    return;
+  }
 
   const container = document.getElementById('warmup-content');
 
