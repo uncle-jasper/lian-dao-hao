@@ -4189,7 +4189,8 @@ function showPopover(word, x, y) {
   // TOCFL level badge
   const existingBadge = document.getElementById('popover-tocfl');
   if (existingBadge) existingBadge.remove();
-  const tocflLevel = getTocflLevel(popoverWord);
+  // Only exact match in popover — substring matches cause false positives on multi-char selections
+  const tocflLevel = TOCFL_LEVELS[popoverWord] !== undefined ? TOCFL_LEVELS[popoverWord] : null;
   if (tocflLevel) {
     const badge = document.createElement('span');
     badge.id = 'popover-tocfl';
