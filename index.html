@@ -444,6 +444,47 @@
     margin-left: auto;
   }
 
+  /* Transcript collapsible panel */
+  .transcript-panel {
+    margin-bottom: 16px;
+  }
+  .transcript-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 16px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+  }
+  .transcript-toggle:hover { border-color: var(--accent-dim); color: var(--accent); }
+  .transcript-toggle-icon { font-size: 9px; color: var(--text-muted); transition: color 0.15s; }
+  .transcript-toggle:hover .transcript-toggle-icon { color: var(--accent); }
+  .transcript-body {
+    display: none;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    padding: 20px 24px;
+  }
+  .transcript-body.open { display: block; }
+  .transcript-text {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 15px;
+    line-height: 1.9;
+    color: var(--text);
+  }
+
   .challenge-block {
     background: var(--bg2);
     border: 1px solid var(--border);
@@ -1068,6 +1109,52 @@
     flex-shrink: 0;
   }
   .resume-card .resume-dismiss:hover { color: var(--red); }
+  /* In-progress session resume card — amber accent */
+  .session-resume-card {
+    background: var(--bg2);
+    border: 1px solid var(--accent-dim);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .session-resume-card:hover { background: var(--accent-glow); }
+  .session-resume-card .resume-icon { font-size: 22px; flex-shrink: 0; }
+  .session-resume-card .resume-body { flex: 1; min-width: 0; }
+  .session-resume-card .resume-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .session-resume-card .resume-preview {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 14px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 3px;
+  }
+  .session-resume-card .resume-meta {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+  .session-resume-card .resume-dismiss {
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px;
+    flex-shrink: 0;
+  }
+  .session-resume-card .resume-dismiss:hover { color: var(--red); }
 
   /* Hover English translation on sentences */
   .hover-sentence {
@@ -1334,6 +1421,9 @@
         <h1>新課程 — New Session</h1>
         <p>Choose your content source and configure this session. <span ondblclick="devLoadMockComprehension()" style="cursor:default;color:transparent;user-select:none;">·</span></p>
       </div>
+
+      <!-- In-progress session resume card -->
+      <div id="session-resume-card" style="display:none;"></div>
 
       <!-- Resume card — shown if a previous chunked session exists -->
       <div id="resume-card" style="display:none;"></div>
@@ -1645,11 +1735,12 @@
       <div class="card">
         <div class="settings-title">Preferences</div>
         <div class="input-group">
-          <label class="input-label">Your current level</label>
+          <label class="input-label">Proficiency target</label>
           <select id="pref-level">
-            <option value="tocfl3" selected>TOCFL Level 3 (Intermediate)</option>
-            <option value="tocfl4">TOCFL Level 4 (Upper Intermediate)</option>
+            <option value="tocfl4">Targeting TOCFL 4 (Upper Intermediate)</option>
+            <option value="tocfl5">Targeting TOCFL 5 (Advanced)</option>
           </select>
+          <div class="hint">Sets the vocabulary level, grammar patterns, and feedback expectations Claude uses across all sessions. Move to TOCFL 5 only after TOCFL 4 feels comfortable.</div>
         </div>
         <div class="input-group">
           <label class="input-label">Preferred response language for feedback</label>
@@ -1760,7 +1851,7 @@ const state = {
     roleplayHistory: [],
   },
   prefs: {
-    level: 'tocfl3',
+    level: 'tocfl4',
     feedbackLang: 'english',
     efficientMode: true,
     workerUrl: '',
@@ -1800,6 +1891,7 @@ function init() {
   renderBank();
   updateNavState();
   checkResumeCard();
+  checkSessionResumeCard();
   updateChunkProgress();
 
   if (!state.anthropicKey) {
@@ -1962,6 +2054,105 @@ function saveChunkState() {
     fullContent: state.chunks.fullContent || '',
     sourcePreview: state.chunks.sourcePreview || '',
   }));
+}
+
+// ═══════════════════════════════════════════════════
+// SESSION PROGRESS — SAVE & RESTORE
+// ═══════════════════════════════════════════════════
+const SEGMENT_LABELS = {
+  warmup: '準備 Warm-up',
+  comprehension: '理解 Comprehension',
+  vocab: '詞彙與語法 Vocab & Grammar',
+  roleplay: '角色扮演 Roleplay',
+  review: '回顧 Review',
+};
+
+function saveSessionProgress(segment) {
+  if (!state.session.active || !state.session.content) return;
+  const data = {
+    segment,
+    session: {
+      content: state.session.content,
+      focus: state.session.focus,
+      completedSegments: state.session.completedSegments,
+      flaggedItems: state.session.flaggedItems,
+      comprehensionAnswers: state.session.comprehensionAnswers,
+      roleplayHistory: state.session.roleplayHistory,
+    },
+    comprehensionData,
+    vocabData,
+    roleplayScenario,
+    savedAt: Date.now(),
+  };
+  localStorage.setItem('mc_session', JSON.stringify(data));
+}
+
+function clearSessionProgress() {
+  localStorage.removeItem('mc_session');
+}
+
+function checkSessionResumeCard() {
+  const card = document.getElementById('session-resume-card');
+  if (!card) return;
+  const saved = JSON.parse(localStorage.getItem('mc_session') || 'null');
+  if (!saved?.session?.content || !saved?.segment) {
+    card.style.display = 'none';
+    return;
+  }
+  const segLabel = SEGMENT_LABELS[saved.segment] || saved.segment;
+  const preview = saved.session.content.slice(0, 80).replace(/\n/g, ' ');
+  const age = Date.now() - (saved.savedAt || 0);
+  const ageStr = age < 3600000 ? `${Math.round(age/60000)}m ago` :
+                 age < 86400000 ? `${Math.round(age/3600000)}h ago` : 'earlier';
+  card.style.display = 'block';
+  card.innerHTML = `
+    <div class="session-resume-card" onclick="resumeSessionProgress()">
+      <div class="resume-icon">▶</div>
+      <div class="resume-body">
+        <div class="resume-title">Continue Session — ${segLabel}</div>
+        <div class="resume-preview">${preview}…</div>
+        <div class="resume-meta">Left off ${ageStr}</div>
+      </div>
+      <div class="resume-dismiss" onclick="dismissSessionResumeCard(event)" title="Discard">✕</div>
+    </div>`;
+}
+
+function resumeSessionProgress() {
+  const saved = JSON.parse(localStorage.getItem('mc_session') || 'null');
+  if (!saved?.session?.content) return;
+
+  // Restore session state
+  state.session = {
+    ...state.session,
+    ...saved.session,
+    active: true,
+  };
+
+  // Restore generated data
+  comprehensionData = saved.comprehensionData || null;
+  vocabData = saved.vocabData || null;
+  roleplayScenario = saved.roleplayScenario || null;
+
+  // Navigate to the saved segment
+  showScreen(saved.segment);
+  setNavActive(saved.segment);
+  updateChunkProgress();
+  updateNavState();
+
+  // Re-render the segment
+  if (saved.segment === 'comprehension') renderComprehension();
+  else if (saved.segment === 'vocab') renderVocab();
+  else if (saved.segment === 'roleplay') renderRoleplay();
+  else if (saved.segment === 'review') renderReview();
+  else if (saved.segment === 'warmup') generateWarmup();
+
+  document.getElementById('session-resume-card').style.display = 'none';
+}
+
+function dismissSessionResumeCard(e) {
+  e.stopPropagation();
+  clearSessionProgress();
+  document.getElementById('session-resume-card').style.display = 'none';
 }
 
 function checkResumeCard() {
@@ -2293,6 +2484,7 @@ function getSyncPayload() {
   return {
     bank: state.bank,
     chunks: JSON.parse(localStorage.getItem('mc_chunks') || 'null'),
+    sessionCount: state.sessionCount,
     prefs: {
       level: state.prefs.level,
       feedbackLang: state.prefs.feedbackLang,
@@ -2357,6 +2549,12 @@ async function pullSync() {
     if (payload.chunks) {
       localStorage.setItem('mc_chunks', JSON.stringify(payload.chunks));
       state.chunks = { ...state.chunks, ...payload.chunks };
+    }
+
+    // Restore session count for bank rotation
+    if (payload.sessionCount) {
+      state.sessionCount = payload.sessionCount;
+      localStorage.setItem('mc_session_count', state.sessionCount);
     }
 
     // Restore prefs (but not API keys — those stay local)
@@ -2505,6 +2703,57 @@ async function callClaude(messages, systemPrompt, maxTokens = 1500) {
   return data.content[0].text;
 }
 
+// ═══════════════════════════════════════════════════
+// BANK ROTATION — SPACED SELECTION & MASTERY TRACKING
+// ═══════════════════════════════════════════════════
+const BANK_SESSION_SLOT = 10;   // max items injected per session
+const BANK_OVERDUE_GAP  = 5;    // sessions before item is considered overdue
+const BANK_RETIRE_AT    = 3;    // correct uses before ready-to-retire
+
+function getActiveBankItems() {
+  const active = state.bank.filter(b => !b.retired);
+  if (active.length <= BANK_SESSION_SLOT) return active;
+
+  const now = state.sessionCount;
+  // Score: lower = higher priority
+  const scored = active.map(item => {
+    const overdue = (now - (item.lastSeen || 0)) >= BANK_OVERDUE_GAP;
+    const correct = item.correct || 0;
+    // Overdue items always come first (score -1000)
+    // Then zero-correct, then lowest correct count, then newest
+    let score = overdue ? -1000 : 0;
+    score += correct * 10;
+    score -= (item.addedAt || 0) / 1e12; // newer = slightly higher priority
+    return { item, score };
+  });
+  scored.sort((a, b) => a.score - b.score);
+  return scored.slice(0, BANK_SESSION_SLOT).map(s => s.item);
+}
+
+function markBankItemCorrect(zh) {
+  const item = state.bank.find(b => b.zh === zh);
+  if (!item || item.retired) return;
+  item.correct = (item.correct || 0) + 1;
+  localStorage.setItem('mc_bank', JSON.stringify(state.bank));
+  renderBank();
+}
+
+function retireBankItem(index) {
+  state.bank[index].retired = true;
+  state.bank[index].retiredAt = Date.now();
+  localStorage.setItem('mc_bank', JSON.stringify(state.bank));
+  renderBank();
+  autoSync('Bank item retired');
+}
+
+function restoreBankItem(index) {
+  state.bank[index].retired = false;
+  state.bank[index].correct = 0;
+  delete state.bank[index].retiredAt;
+  localStorage.setItem('mc_bank', JSON.stringify(state.bank));
+  renderBank();
+}
+
 function getSystemPrompt() {
   const bankItems = state.bank.length > 0
     ? `\n\nStruggle Bank (vocab/grammar the student specifically struggles with — weave these into challenges where possible):\n${state.bank.map(b => `- ${b.zh}${b.en ? ` (${b.en})` : ''}`).join('\n')}`
@@ -2514,15 +2763,34 @@ function getSystemPrompt() {
     ? `\n\nCRITICAL: This session is based on a specific content chunk. ALL questions, vocabulary, grammar examples, and comprehension challenges MUST be drawn exclusively from the content provided in the user message. Do NOT draw on outside knowledge, general topics, or content beyond what is explicitly provided. If a question cannot be answered from the provided content alone, do not include it.`
     : '';
 
-  return `You are an expert Taiwanese Mandarin coach. The student is a solid intermediate learner (TOCFL Level 3, studying for 7 years, targeting TOCFL Level 4). They live in Southern California but are relocating to Taipei and use Traditional Chinese characters exclusively.
+  const targetLevel = state.prefs.level === 'tocfl5' ? 5 : 4;
+  const levelGuidance = targetLevel === 4 ? `
+TOCFL 4 TARGET — actively push the student from Level 3 toward Level 4 (B2):
+- Introduce and reinforce complex connectives: 儘管、即使、況且、不但⋯而且、雖說、然而、從而、進而、因而
+- Push nuanced aspect markers — 著、過 in complex contexts, result/direction complements
+- Build formal/written register awareness — flag when spoken-only forms appear in written contexts
+- Introduce 成語 naturally when content supports it
+- Explicitly flag when the student defaults to a Level 3 construction where Level 4 would be more natural (e.g. 可是→然而 in formal writing, 很→相當/頗 for precision)
+- Vocabulary in examples and challenges should skew toward TOCFL 4 words (高階級)
+- Sentence challenges must require Level 4 grammar patterns, not just correct Level 3 usage` : `
+TOCFL 5 TARGET — student has reached Level 4 comfort, pushing toward advanced (C1):
+- Expect and elicit idiomatic density — 成語 and set phrases should appear naturally
+- Introduce classical-influenced expressions and formal written Chinese (書面語) regularly
+- Use and elicit complex, ambiguous sentence structures
+- Feedback focuses on stylistic choices, register, connotation and naturalness — not just correctness
+- Vocabulary draws from TOCFL 5 level (流利級) — expect student to handle unfamiliar words in context
+- Push for nuance: near-synonym distinction, implied meaning, tone`;
 
-Your coaching priorities:
-- Vocabulary retention through contextual usage, not rote memorization
-- Speaking fluency and natural phrasing  
-- Listening comprehension
-- Grammar accuracy, especially particles, measure words, and connectives
+  return `You are an expert Taiwanese Mandarin coach. The student is Dan — 7 years of study, solid TOCFL Level 3, actively targeting TOCFL Level ${targetLevel}. Relocating to Taipei by end of 2026. Uses Traditional Chinese characters exclusively — never Simplified.
+${levelGuidance}
 
-Always use Traditional Chinese characters (繁體字). Include pinyin only when explicitly asked. Keep challenges authentic — avoid overly textbook-style sentences.
+General approach:
+- Vocabulary through contextual usage, not rote memorization
+- Natural Taiwanese Mandarin phrasing — not Mainland-influenced
+- Listening comprehension and natural speech rhythm
+- Grammar accuracy: particles, measure words, connectives, aspect markers
+- Traditional Chinese only (繁體字). Pinyin only if explicitly asked.
+- Keep challenges authentic — real usage, not textbook sentences.
 
 Feedback language: ${state.prefs.feedbackLang === 'english' ? 'English' : state.prefs.feedbackLang === 'chinese' ? 'Traditional Chinese' : 'Mixed (Chinese with English gloss)'}.${bankItems}${contentBoundary}`;
 }
@@ -2606,6 +2874,7 @@ async function startSession() {
   showScreen('warmup');
   setNavActive('warmup');
   updateChunkProgress();
+  saveSessionProgress('warmup');
   generateWarmup();
 }
 
@@ -2729,8 +2998,8 @@ let comprehensionData = null;
 
 async function generateComprehension() {
   const focusNote = state.session.focus ? `\nStudent's focus: ${state.session.focus}` : '';
-  const bankNote = state.bank.length > 0
-    ? `\nStruggle bank items to incorporate: ${state.bank.slice(0,8).map(b=>b.zh).join('、')}`
+  const bankNote = getActiveBankItems().length > 0
+    ? `\nStruggle bank items to incorporate: ${getActiveBankItems().slice(0,8).map(b=>b.zh).join('、')}`
     : '';
 
   const prompt = `Content for this session (this is the ONLY material to base questions on — do not reference anything outside this text):\n\n${state.session.content.slice(0, contentLimit())}${focusNote}${bankNote}
@@ -2769,10 +3038,20 @@ Include 3 multiple choice and 2 open-ended questions. Make them genuinely test c
 function goToSegment(name) {
   showScreen(name);
   setNavActive(name);
+  saveSessionProgress(name);
   if (name === 'comprehension') renderComprehension();
   if (name === 'vocab') renderVocab();
   if (name === 'roleplay') renderRoleplay();
   if (name === 'review') renderReview();
+}
+
+function toggleTranscript() {
+  const body = document.getElementById('transcript-body');
+  const btn = document.getElementById('transcript-toggle-btn');
+  const icon = btn.querySelector('.transcript-toggle-icon');
+  const isOpen = body.classList.toggle('open');
+  icon.textContent = isOpen ? '▼' : '▶';
+  btn.querySelector('span:last-child').textContent = isOpen ? '原文 — Hide Transcript' : '原文 — Show Transcript';
 }
 
 function devLoadMockComprehension() {
@@ -2832,10 +3111,26 @@ function renderComprehension() {
     return;
   }
 
+  // Transcript toggle panel
+  const transcriptText = state.session.content || '';
   let html = '';
+  if (transcriptText) {
+    html += `
+      <div class="transcript-panel" id="transcript-panel">
+        <button class="transcript-toggle" onclick="toggleTranscript()" id="transcript-toggle-btn">
+          <span class="transcript-toggle-icon">▶</span>
+          <span>原文 — Show Transcript</span>
+        </button>
+        <div class="transcript-body" id="transcript-body">
+          <div class="transcript-text">${transcriptText.replace(/\n/g, '<br>')}</div>
+        </div>
+      </div>`;
+  }
+
+  let html2 = '';
   comprehensionData.questions.forEach((q, i) => {
     if (q.type === 'mc') {
-      html += `
+      html2 += `
         <div class="challenge-block" id="q-${i}">
           <div class="card-title">Question ${i+1} — Multiple Choice</div>
           <div class="challenge-text">${q.zh} ${listenBtn(q.zh)}</div>
@@ -2852,7 +3147,7 @@ function renderComprehension() {
           <div class="feedback-block" id="fb-${i}"></div>
         </div>`;
     } else {
-      html += `
+      html2 += `
         <div class="challenge-block" id="q-${i}">
           <div class="card-title">Question ${i+1} — Open Response</div>
           <div class="challenge-text">${q.zh} ${listenBtn(q.zh)}</div>
@@ -2871,7 +3166,7 @@ function renderComprehension() {
     }
   });
 
-  container.innerHTML = html;
+  container.innerHTML = html + html2;
   actions.style.display = 'flex';
   state.session.completedSegments.push('comprehension');
   updateNavState();
@@ -2899,7 +3194,7 @@ async function submitOpenAnswer(qIndex, sample) {
 
   if (state.prefs.efficientMode) {
     fb.className = 'feedback-block shown neutral';
-    fb.textContent = `Model answer: ${sample}`;
+    fb.innerHTML = `Model answer: <span style="font-family:'Noto Serif TC',serif;">${sample}</span> ${listenBtn(sample)}`;
     return;
   }
 
@@ -2912,7 +3207,7 @@ async function submitOpenAnswer(qIndex, sample) {
     }], getSystemPrompt(), 400);
     fb.textContent = result;
   } catch(e) {
-    fb.textContent = `Model answer: ${sample}`;
+    fb.innerHTML = `Model answer: <span style="font-family:'Noto Serif TC',serif;">${sample}</span> ${listenBtn(sample)}`;
   }
 }
 
@@ -2922,8 +3217,8 @@ async function submitOpenAnswer(qIndex, sample) {
 let vocabData = null;
 
 async function generateVocabChallenges() {
-  const bankNote = state.bank.length > 0
-    ? `\nStruggle bank items to prioritize: ${state.bank.map(b=>`${b.zh}${b.en?` (${b.en})`:''}`).join(', ')}`
+  const bankNote = getActiveBankItems().length > 0
+    ? `\nStruggle bank items to prioritize: ${getActiveBankItems().map(b=>`${b.zh}${b.en?` (${b.en})`:''}`).join(', ')}`
     : '';
 
   const prompt = `Content for this session (vocab and grammar must come from THIS text only):\n\n${state.session.content.slice(0, contentLimit())}${bankNote}
@@ -3041,7 +3336,7 @@ function revealGrammarAnswer(answer) {
   const userAns = document.getElementById('grammar-ans').value.trim();
   const fb = document.getElementById('grammar-fb');
   fb.className = 'feedback-block shown neutral';
-  fb.textContent = `Answer: ${answer}`;
+  fb.innerHTML = `Answer: <span style="font-family:'Noto Serif TC',serif;">${answer}</span> ${listenBtn(answer)}`;
 }
 
 async function evalSentence(index, targetWord) {
@@ -3076,8 +3371,8 @@ async function evalSentence(index, targetWord) {
 let roleplayScenario = null;
 
 async function generateRoleplayScenario() {
-  const bankNote = state.bank.length > 0
-    ? `\nTarget vocab to weave in: ${state.bank.slice(0,6).map(b=>b.zh).join('、')}`
+  const bankNote = getActiveBankItems().length > 0
+    ? `\nTarget vocab to weave in: ${getActiveBankItems().slice(0,6).map(b=>b.zh).join('、')}`
     : '';
   const focusNote = state.session.focus ? `\nStudent focus: ${state.session.focus}` : '';
 
@@ -3202,16 +3497,25 @@ async function sendRoleplayMessage() {
       content: m.content
     }));
 
-    const sysAddition = `\n\nYou are playing: ${roleplayScenario.your_role}. Stay in character and respond naturally in Traditional Chinese. After your in-character response, add a brief OOC note in [brackets] in ${state.prefs.feedbackLang === 'english' ? 'English' : 'Chinese'} noting: (1) any grammar or word choice improvements for the student's last message, (2) whether they used any of these target vocab: ${vocabTargets}. Keep OOC note short — 1-2 sentences.`;
+    const sysAddition = `\n\nYou are playing: ${roleplayScenario.your_role}. Stay in character and respond naturally in Traditional Chinese. Structure your response exactly like this:\n1. Your in-character Chinese response\n2. An English translation of your Chinese response in {curly braces}\n3. A brief OOC coaching note in [square brackets] in ${state.prefs.feedbackLang === 'english' ? 'English' : 'Chinese'} noting: (1) any grammar or word choice improvements for the student's last message, (2) for each target vocab word the student used correctly, prefix it with ✓ like: ✓而且. Target vocab: ${vocabTargets}. Keep OOC note short — 1-2 sentences.`;
 
     const result = await callClaude(messages, getSystemPrompt() + sysAddition, 500);
 
-    // Split in-character from OOC note
+    // Split in-character from translation and OOC note
     const oocMatch = result.match(/\[([^\]]+)\]/);
-    const inChar = result.replace(/\[([^\]]+)\]/, '').trim();
+    const enMatch = result.match(/\{([^}]+)\}/);
+    const inChar = result.replace(/\{[^}]+\}/, '').replace(/\[([^\]]+)\]/, '').trim();
     const oocNote = oocMatch ? oocMatch[1] : '';
+    const enTranslation = enMatch ? enMatch[1] : '';
 
-    state.session.roleplayHistory.push({ role: 'assistant', content: inChar });
+    // Auto-increment correct count for bank items Claude says were used well
+    // Claude marks them with ✓word in the OOC note
+    if (oocNote) {
+      const correctMatches = oocNote.matchAll(/✓([\u4e00-\u9fff\u3400-\u4dbf]{1,6})/g);
+      for (const m of correctMatches) { markBankItemCorrect(m[1]); }
+    }
+
+    state.session.roleplayHistory.push({ role: 'assistant', content: inChar, en: enTranslation });
     renderThread();
 
     // Auto-speak Claude's response if enabled
@@ -3235,27 +3539,38 @@ async function sendRoleplayMessage() {
 // SEGMENT: REVIEW
 // ═══════════════════════════════════════════════════
 function renderReview() {
+  clearSessionProgress();
   const container = document.getElementById('review-content');
-  const elapsed = state.session.startTime ? Math.floor((Date.now() - state.session.startTime) / 60000) : 0;
   const flagged = state.session.flaggedItems;
+
+  // TOCFL breakdown of items flagged/added this session
+  const tocflCounts = {};
+  flagged.forEach(f => {
+    const lv = getTocflLevel(f.zh);
+    if (lv) tocflCounts[lv] = (tocflCounts[lv] || 0) + 1;
+  });
+  const tocflSummary = Object.keys(tocflCounts).sort().map(lv => {
+    const color = TOCFL_COLOR[lv];
+    const label = TOCFL_LABEL[lv];
+    return `<span style="display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 7px;border-radius:3px;border:1px solid ${color};color:${color};margin:2px 3px 2px 0;">${tocflCounts[lv]} × ${label}</span>`;
+  }).join('');
 
   container.innerHTML = `
     <div class="review-grid">
-      <div class="review-stat"><div class="num">${elapsed}m</div><div class="label">Session length</div></div>
-      <div class="review-stat"><div class="num">${state.session.completedSegments.length}</div><div class="label">Segments completed</div></div>
-      <div class="review-stat"><div class="num">${flagged.length}</div><div class="label">Items flagged today</div></div>
+      <div class="review-stat"><div class="num">${state.session.completedSegments.filter(s => s !== 'review').length}</div><div class="label">Segments completed</div></div>
+      <div class="review-stat"><div class="num">${flagged.length}</div><div class="label">Words added this session</div></div>
       <div class="review-stat"><div class="num">${state.bank.length}</div><div class="label">Total in struggle bank</div></div>
     </div>
 
     ${flagged.length > 0 ? `
       <div class="card">
-        <div class="card-title">Flagged This Session</div>
+        <div class="card-title">Added to Bank This Session</div>
+        ${tocflSummary ? `<div style="margin-bottom:12px;">${tocflSummary}</div>` : ''}
         <div class="flagged-list">
           ${flagged.map(f => `
             <div class="flagged-item">
-              <span class="zh">${f.zh}</span>
+              <span class="zh">${f.zh}</span>${tocflBadge(f.zh)}
               <span class="en">${f.en || ''}</span>
-              <span class="added">+ added to bank</span>
             </div>
           `).join('')}
         </div>
@@ -3328,6 +3643,7 @@ function newSession() {
   comprehensionData = null;
   vocabData = null;
   roleplayScenario = null;
+  clearSessionProgress();
   // Reset chunk selector UI
   const chunkArea = document.getElementById('chunk-selector-area');
   if (chunkArea) { chunkArea.style.display = 'none'; chunkArea._selectedChunk = null; }
@@ -3335,6 +3651,7 @@ function newSession() {
   showScreen('setup');
   updateNavState();
   checkResumeCard();
+  checkSessionResumeCard();
   updateChunkProgress();
 }
 
@@ -3929,6 +4246,9 @@ function addBankItemWithData(zh, en, dictData) {
     pinyin: dictData?.pinyin || '',
     example: '',
     addedAt: Date.now(),
+    correct: 0,
+    lastSeen: 0,
+    retired: false,
   };
   state.bank.push(item);
   localStorage.setItem('mc_bank', JSON.stringify(state.bank));
@@ -3981,19 +4301,40 @@ function removeBankItem(index) {
 function renderBank() {
   const list = document.getElementById('bank-list');
   const empty = document.getElementById('bank-empty');
-  document.getElementById('bank-count').textContent = state.bank.length;
+  const active = state.bank.filter(b => !b.retired);
+  const retired = state.bank.filter(b => b.retired);
+  document.getElementById('bank-count').textContent = active.length;
+
   if (state.bank.length === 0) {
     list.innerHTML = '';
     empty.style.display = 'block';
     return;
   }
   empty.style.display = 'none';
-  list.innerHTML = state.bank.map((item, i) => `
-    <div class="bank-item">
+
+  function itemHTML(item, i) {
+    const correct = item.correct || 0;
+    const readyToRetire = correct >= BANK_RETIRE_AT && !item.retired;
+    const mastering = correct > 0 && correct < BANK_RETIRE_AT;
+    let statusBadge = '';
+    if (readyToRetire) {
+      statusBadge = `<span style="font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 6px;border-radius:3px;border:1px solid var(--green);color:var(--green);margin-left:5px;">Ready to retire</span>`;
+    } else if (mastering) {
+      statusBadge = `<span style="font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 6px;border-radius:3px;border:1px solid var(--accent-dim);color:var(--accent);margin-left:5px;">${correct}/${BANK_RETIRE_AT} correct</span>`;
+    }
+    const retireBtn = readyToRetire
+      ? `<button class="btn sm" style="color:var(--green);border-color:rgba(122,184,122,0.4);padding:2px 8px;font-size:11px;" onclick="retireBankItem(${i})">Retire ✓</button>`
+      : '';
+    const restoreBtn = item.retired
+      ? `<button class="btn sm" style="font-size:11px;padding:2px 8px;" onclick="restoreBankItem(${i})">Restore</button>`
+      : '';
+    return `
+    <div class="bank-item" style="${item.retired ? 'opacity:0.5;' : ''}">
       <div class="bank-item-header">
-        <span class="zh">${item.zh}</span>${tocflBadge(item.zh)}
+        <span class="zh">${item.zh}</span>${tocflBadge(item.zh)}${statusBadge}
         ${item.pinyin ? `<span class="pinyin">${item.pinyin}</span>` : ''}
         <span style="margin-left:4px;">${listenBtn ? listenBtn(item.zh) : ''}</span>
+        ${retireBtn}${restoreBtn}
         <span class="remove-bank" onclick="removeBankItem(${i})">✕</span>
       </div>
       ${item.en ? `<div class="en">${item.en}</div>` : '<div class="lookup-status">Looking up definition…</div>'}
@@ -4003,8 +4344,18 @@ function renderBank() {
           ${listenBtn(item.example)}
           ${item.exampleEn ? `<div class="example-en">${item.exampleEn}</div>` : ''}
         </div>` : ''}
-    </div>
-  `).join('');
+    </div>`;
+  }
+
+  const activeHTML = active.map((item) => itemHTML(item, state.bank.indexOf(item))).join('');
+  const retiredHTML = retired.length > 0
+    ? `<div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-muted);margin-bottom:12px;">Retired (${retired.length})</div>
+        ${retired.map((item) => itemHTML(item, state.bank.indexOf(item))).join('')}
+      </div>`
+    : '';
+
+  list.innerHTML = activeHTML + retiredHTML;
 
   // Async lookup for items missing definition/pinyin
   state.bank.forEach((item) => {
