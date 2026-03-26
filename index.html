@@ -3929,10 +3929,12 @@ function playListenWarmup(text, onComplete) {
 }
 
 function warmupBreakdownContinue() {
-  const fn = window._breakdownOnComplete;
+  console.log('warmupBreakdownContinue called, _breakdownOnComplete:', typeof window._breakdownOnComplete, 'warmupOnComplete:', typeof window.warmupOnComplete);
+  const fn = window._breakdownOnComplete || window.warmupOnComplete;
   window._breakdownOnComplete = null;
   window.warmupOnComplete = null;
-  if (fn) fn();
+  if (fn) { console.log('calling fn'); fn(); }
+  else { console.log('no fn found — trying direct advance'); goToSegment('comprehension'); }
 }
 
 async function showBreakdown() {
