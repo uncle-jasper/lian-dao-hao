@@ -1934,6 +1934,10 @@ function updateNavState() {
 function navToStep(step) {
   if (!state.session.active && step !== 'setup') return;
   showScreen(step);
+  setNavActive(step);
+  if (step === 'comprehension' && !comprehensionData) generateComprehension();
+  if (step === 'vocab' && !vocabData) generateVocabChallenges();
+  if (step === 'roleplay' && !roleplayScenario) generateRoleplayScenario();
 }
 
 function setTopbarTitle(msg) {
@@ -3057,9 +3061,18 @@ function goToSegment(name) {
   showScreen(name);
   setNavActive(name);
   saveSessionProgress(name);
-  if (name === 'comprehension') renderComprehension();
-  if (name === 'vocab') renderVocab();
-  if (name === 'roleplay') renderRoleplay();
+  if (name === 'comprehension') {
+    if (!comprehensionData) generateComprehension();
+    renderComprehension();
+  }
+  if (name === 'vocab') {
+    if (!vocabData) generateVocabChallenges();
+    renderVocab();
+  }
+  if (name === 'roleplay') {
+    if (!roleplayScenario) generateRoleplayScenario();
+    renderRoleplay();
+  }
   if (name === 'review') renderReview();
 }
 
