@@ -1038,7 +1038,6 @@
     line-height: 1.7;
     margin-top: 8px;
     padding-top: 8px;
-    border-top: 1px solid var(--border);
     display: none;
     cursor: default;
   }
@@ -3913,9 +3912,8 @@ function playListenWarmup(text, onComplete) {
           <button class="speed-pill active" onclick="setWarmupSpeed(0.85, this)">1×</button>
         </div>
         <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-          <button class="btn" id="warmup-replay-btn" onclick="playWarmupAudio(getCurrentWarmupRate())" disabled>↺ Replay</button>
-          <button class="btn" onclick="showBreakdown()">Skip → Sentence Breakdown</button>
-          <button class="btn primary" onclick="showBreakdown()">Continue → Sentence Breakdown</button>
+          <button class="btn" id="warmup-replay-btn" onclick="playWarmupAudio(getCurrentWarmupRate())">↺ Replay</button>
+          <button class="btn primary" onclick="showBreakdown()">Sentence Breakdown →</button>
         </div>
       </div>`;
 
@@ -3933,6 +3931,9 @@ function playListenWarmup(text, onComplete) {
 async function showBreakdown() {
   window.speechSynthesis?.cancel();
   const container = document.getElementById('warmup-content');
+
+  // Capture onComplete before any async work — innerHTML replacement can't lose it
+  const onComplete = window.warmupOnComplete;
 
   const sentences = splitIntoSentences(window._warmupSpeakText, 120)
     .filter(s => /[\u4e00-\u9fff]/.test(s));
@@ -3956,8 +3957,13 @@ async function showBreakdown() {
       <div class="status-bar"><div class="loading-dots"><span></span><span></span><span></span></div> Fetching translations...</div>
     </div>
     <div class="action-row" style="margin-top:4px;">
-      <button class="btn primary" onclick="window.warmupOnComplete && window.warmupOnComplete()">Continue → Warm-up Cards</button>
+      <button class="btn primary" id="breakdown-continue-btn">Continue → Warm-up Cards</button>
     </div>`;
+
+  // Wire Continue button directly to the captured onComplete
+  document.getElementById('breakdown-continue-btn').addEventListener('click', () => {
+    if (onComplete) { window.warmupOnComplete = null; onComplete(); }
+  });
 
   // Fetch translations from Claude
   let translations = [];
