@@ -3051,13 +3051,15 @@ Include 3 multiple choice and 2 open-ended questions. Make them genuinely test c
     console.log('calling Claude for comprehension...');
     const result = await callClaude([{ role: 'user', content: prompt }], getSystemPrompt(), 1200);
     console.log('comprehension result received, length:', result?.length);
+    console.log('raw result:', result?.slice(0, 300));
     const clean = result.replace(/```json|```/g, '').trim();
     comprehensionData = JSON.parse(clean);
     console.log('comprehensionData set, questions:', comprehensionData?.questions?.length);
   } catch(e) {
-    comprehensionData = null;
+    console.error('comprehension error:', e.message);
+    comprehensionData = { error: true }; // non-null so retry loop stops
     const container = document.getElementById('comprehension-content');
-    if (container) container.innerHTML = `<div class="status-bar" style="color:var(--red);">Error generating comprehension: ${e.message}. Check your API key and Worker URL in Settings.</div>`;
+    if (container) container.innerHTML = `<div class="status-bar" style="color:var(--red);">Error generating comprehension: ${e.message}</div>`;
   }
 }
 
@@ -3146,6 +3148,9 @@ function renderComprehension() {
     setTimeout(() => renderComprehension(), 2000);
     return;
   }
+
+  // Error state — generation failed
+  if (comprehensionData.error) return;
 
   // Transcript toggle panel
   const transcriptText = state.session.content || '';
