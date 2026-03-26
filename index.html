@@ -3017,6 +3017,7 @@ Extract a warm-up overview strictly from the content above — every vocab item 
 let comprehensionData = null;
 
 async function generateComprehension() {
+  console.log('generateComprehension called, content length:', state.session.content?.length, 'key set:', !!state.anthropicKey);
   const focusNote = state.session.focus ? `\nStudent's focus: ${state.session.focus}` : '';
   const bankNote = getActiveBankItems().length > 0
     ? `\nStruggle bank items to incorporate: ${getActiveBankItems().slice(0,8).map(b=>b.zh).join('、')}`
@@ -3047,9 +3048,12 @@ Generate a comprehension challenge set based STRICTLY on the content above. Ever
 Include 3 multiple choice and 2 open-ended questions. Make them genuinely test comprehension, not just surface facts.`;
 
   try {
+    console.log('calling Claude for comprehension...');
     const result = await callClaude([{ role: 'user', content: prompt }], getSystemPrompt(), 1200);
+    console.log('comprehension result received, length:', result?.length);
     const clean = result.replace(/```json|```/g, '').trim();
     comprehensionData = JSON.parse(clean);
+    console.log('comprehensionData set, questions:', comprehensionData?.questions?.length);
   } catch(e) {
     comprehensionData = null;
     const container = document.getElementById('comprehension-content');
@@ -3135,6 +3139,7 @@ function devLoadMockComprehension() {
 function renderComprehension() {
   const container = document.getElementById('comprehension-content');
   const actions = document.getElementById('comprehension-actions');
+  console.log('renderComprehension called, comprehensionData:', !!comprehensionData, 'content:', !!state.session.content);
 
   if (!comprehensionData) {
     container.innerHTML = `<div class="status-bar"><div class="loading-dots"><span></span><span></span><span></span></div> Still generating — one moment...</div>`;
