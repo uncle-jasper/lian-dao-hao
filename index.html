@@ -3913,7 +3913,7 @@ function playListenWarmup(text, onComplete) {
         </div>
         <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
           <button class="btn" id="warmup-replay-btn" onclick="playWarmupAudio(getCurrentWarmupRate())">↺ Replay</button>
-          <button class="btn primary" onclick="showBreakdown()">Sentence Breakdown →</button>
+          <button class="btn primary" onclick="showBreakdown().catch(e => console.error('breakdown error:', e))">Sentence Breakdown →</button>
         </div>
       </div>`;
 
@@ -3936,7 +3936,7 @@ async function showBreakdown() {
   const onComplete = window.warmupOnComplete;
 
   const sentences = splitIntoSentences(window._warmupSpeakText, 120)
-    .filter(s => /[\u4e00-\u9fff]/.test(s));
+    .filter(s => /[一-鿿]/.test(s));
 
   // If no sentences or no content, just advance
   if (!sentences.length || !window._warmupSpeakText) {
