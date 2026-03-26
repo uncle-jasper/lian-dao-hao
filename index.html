@@ -1803,8 +1803,11 @@ const TOCFL_COLOR = {1:'var(--text-muted)',2:'var(--blue)',3:'var(--blue)',4:'va
 
 function getTocflLevel(word) {
   if (!word) return null;
+  // Exact match first
   if (TOCFL_LEVELS[word] !== undefined) return TOCFL_LEVELS[word];
-  for (let len = word.length; len >= 1; len--) {
+  // Substring fallback — only 2+ chars to avoid false positives from
+  // common single characters like 有, 是, 了, 在 matching everything
+  for (let len = word.length - 1; len >= 2; len--) {
     for (let start = 0; start <= word.length - len; start++) {
       const sub = word.slice(start, start + len);
       if (TOCFL_LEVELS[sub] !== undefined) return TOCFL_LEVELS[sub];
