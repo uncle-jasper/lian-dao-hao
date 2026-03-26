@@ -3034,6 +3034,8 @@ Include 3 multiple choice and 2 open-ended questions. Make them genuinely test c
     comprehensionData = JSON.parse(clean);
   } catch(e) {
     comprehensionData = null;
+    const container = document.getElementById('comprehension-content');
+    if (container) container.innerHTML = `<div class="status-bar" style="color:var(--red);">Error generating comprehension: ${e.message}. Check your API key and Worker URL in Settings.</div>`;
   }
 }
 
@@ -3253,6 +3255,8 @@ Include 6-8 vocab items (mixing content words and any struggle bank items), 1 gr
     vocabData = JSON.parse(clean);
   } catch(e) {
     vocabData = null;
+    const container = document.getElementById('vocab-content');
+    if (container) container.innerHTML = `<div class="status-bar" style="color:var(--red);">Error generating vocab: ${e.message}</div>`;
   }
 }
 
@@ -3402,6 +3406,8 @@ Create a short roleplay scenario in JSON. Return ONLY valid JSON:
     }];
   } catch(e) {
     roleplayScenario = null;
+    const container = document.getElementById('roleplay-content');
+    if (container) container.innerHTML = `<div class="status-bar" style="color:var(--red);">Error generating roleplay: ${e.message}</div>`;
   }
 }
 
