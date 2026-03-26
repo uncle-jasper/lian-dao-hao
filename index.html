@@ -3932,11 +3932,18 @@ async function showBreakdown() {
   window.speechSynthesis?.cancel();
   const container = document.getElementById('warmup-content');
 
-  // Capture onComplete before any async work — innerHTML replacement can't lose it
+  // Capture onComplete before any async work
   const onComplete = window.warmupOnComplete;
 
   const sentences = splitIntoSentences(window._warmupSpeakText, 120)
     .filter(s => /[\u4e00-\u9fff]/.test(s));
+
+  // If no sentences or no content, just advance
+  if (!sentences.length || !window._warmupSpeakText) {
+    window.warmupOnComplete = null;
+    if (onComplete) onComplete();
+    return;
+  }
 
   container.innerHTML = `
     <div class="listen-warmup" style="margin-bottom:16px;">
@@ -3954,59 +3961,68 @@ async function showBreakdown() {
     </div>
     <div class="breakdown-panel" id="breakdown-panel">
       <div class="breakdown-title">逐句分析 — Sentence Breakdown</div>
-      <div class="status-bar"><div class="loading-dots"><span></span><span></span><span></span></div> Fetching translations...</div>
     </div>
     <div class="action-row" style="margin-top:4px;">
       <button class="btn primary" id="breakdown-continue-btn">Continue → Warm-up Cards</button>
     </div>`;
 
-  // Wire Continue button directly to the captured onComplete
-  document.getElementById('breakdown-continue-btn').addEventListener('click', () => {
-    if (onComplete) { window.warmupOnComplete = null; onComplete(); }
-  });
-
-  // Fetch translations from Claude
-  let translations = [];
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': state.anthropicKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 800,
-        messages: [{
-          role: 'user',
-          content: `Translate each of these Traditional Chinese sentences into natural English. Return ONLY a JSON array of strings, one translation per sentence, in the same order. No extra text, no markdown fences.\n\nSentences:\n${JSON.stringify(sentences)}`
-        }]
-      })
+  // Wire Continue button immediately — works even if translation fetch fails
+  const continueBtn = document.getElementById('breakdown-continue-btn');
+  if (continueBtn) {
+    continueBtn.addEventListener('click', () => {
+      window.warmupOnComplete = null;
+      if (onComplete) onComplete();
     });
-    const data = await res.json();
-    const raw = data.content?.[0]?.text?.trim() || '[]';
-    translations = JSON.parse(raw.replace(/^```json\s*/, '').replace(/\s*```$/, ''));
-  } catch(e) {
-    translations = sentences.map(() => '');
   }
 
-  const panel = document.getElementById('breakdown-panel');
-  if (!panel) return;
-  panel.innerHTML = `<div class="breakdown-title">逐句分析 — Sentence Breakdown</div>` +
-    sentences.map((s, i) => {
-      const en = translations[i] || '';
-      const escaped = escapeAttr(s);
-      return `
-        <div class="breakdown-row">
-          <div class="breakdown-zh">
-            ${s}
-            ${en ? `<div class="breakdown-en">${en}</div>` : ''}
-          </div>
-          <div class="breakdown-listen">${listenBtn(escaped)}</div>
-        </div>`;
-    }).join('');
+  // Render sentences — call with translations array (empty = no hover English yet)
+  function renderRows(translations) {
+    const panel = document.getElementById('breakdown-panel');
+    if (!panel) return;
+    panel.innerHTML = '<div class="breakdown-title">逐句分析 — Sentence Breakdown</div>' +
+      sentences.map((s, i) => {
+        const en = (translations && translations[i]) || '';
+        const escaped = escapeAttr(s);
+        return '<div class="breakdown-row">' +
+          '<div class="breakdown-zh">' + s +
+          (en ? '<div class="breakdown-en">' + en + '</div>' : '') +
+          '</div>' +
+          '<div class="breakdown-listen">' + listenBtn(escaped) + '</div>' +
+          '</div>';
+      }).join('');
+  }
+
+  // Show sentences immediately with no translations
+  renderRows([]);
+
+  // Then fetch translations and re-render with hover English
+  if (state.anthropicKey) {
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': state.anthropicKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 800,
+          messages: [{
+            role: 'user',
+            content: 'Translate each of these Traditional Chinese sentences into natural English. Return ONLY a JSON array of strings, one translation per sentence, in the same order. No extra text, no markdown fences.\n\nSentences:\n' + JSON.stringify(sentences)
+          }]
+        })
+      });
+      const data = await res.json();
+      const raw = (data.content && data.content[0] && data.content[0].text || '[]').trim();
+      const translations = JSON.parse(raw.replace(/^```json\s*/, '').replace(/\s*```$/, ''));
+      renderRows(translations);
+    } catch(e) {
+      // Translations failed silently — sentences visible, just no hover English
+    }
+  }
 }
 
 function skipListenWarmup() {
