@@ -3928,6 +3928,22 @@ function playListenWarmup(text, onComplete) {
   }
 }
 
+function splitIntoSentences(text, maxLen) {
+  const parts = text.split(/(?<=[。！？，、])/);
+  const sentences = [];
+  let current = '';
+  for (const part of parts) {
+    if ((current + part).length > maxLen) {
+      if (current) sentences.push(current.trim());
+      current = part;
+    } else {
+      current += part;
+    }
+  }
+  if (current.trim()) sentences.push(current.trim());
+  return sentences.filter(s => s.length > 0);
+}
+
 function warmupBreakdownContinue() {
   console.log('warmupBreakdownContinue called, _breakdownOnComplete:', typeof window._breakdownOnComplete, 'warmupOnComplete:', typeof window.warmupOnComplete);
   const fn = window._breakdownOnComplete || window.warmupOnComplete;
