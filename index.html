@@ -2955,7 +2955,7 @@ Extract a warm-up overview strictly from the content above — every vocab item 
   }
 }`;
 
-    const result = await callClaude([{ role: 'user', content: prompt }], getSystemPrompt(), 1200);
+    const result = await callClaude([{ role: 'user', content: prompt }], getSystemPrompt(), 2000);
     const clean = result.replace(/```json|```/g, '').trim();
     let warmupData;
     try { warmupData = JSON.parse(clean); } catch(e) {
@@ -3049,7 +3049,7 @@ Include 3 multiple choice and 2 open-ended questions. Make them genuinely test c
 
   try {
     console.log('calling Claude for comprehension...');
-    const result = await callClaude([{ role: 'user', content: prompt }], getSystemPrompt(), 1200);
+    const result = await callClaude([{ role: 'user', content: prompt }], getSystemPrompt(), 2500);
     console.log('comprehension result received, length:', result?.length);
     console.log('raw result:', result?.slice(0, 300));
     const clean = result.replace(/```json|```/g, '').trim();
@@ -3287,7 +3287,7 @@ Generate vocabulary and grammar usage challenges drawn strictly from the content
 Include 6-8 vocab items (mixing content words and any struggle bank items), 1 grammar challenge, and 3 sentence production challenges.`;
 
   try {
-    const result = await callClaude([{ role: 'user', content: prompt }], getSystemPrompt(), 1500);
+    const result = await callClaude([{ role: 'user', content: prompt }], getSystemPrompt(), 2000);
     const clean = result.replace(/```json|```/g, '').trim();
     vocabData = JSON.parse(clean);
   } catch(e) {
