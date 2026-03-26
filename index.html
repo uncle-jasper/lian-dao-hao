@@ -3853,7 +3853,9 @@ function playWarmupAudio(rate) {
   const utt = new SpeechSynthesisUtterance(window._warmupSpeakText);
   utt.lang = 'zh-TW';
   utt.rate = rate;
-  if (window._warmupVoice) utt.voice = window._warmupVoice;
+  // Always resolve voice fresh — handles resume where _warmupVoice may be stale
+  const voice = getWarmupVoice() || window._warmupVoice;
+  if (voice) utt.voice = voice;
   utt.onend = () => {
     const icon = document.getElementById('warmup-listen-icon');
     if (icon) { icon.textContent = '🔊'; icon.classList.add('idle'); }
@@ -3929,7 +3931,27 @@ function playListenWarmup(text, onComplete) {
 }
 
 function splitIntoSentences(text, maxLen) {
-  const parts = text.split(/(?<=[。！？，、])/);
+  // First try splitting on Chinese sentence-ending punctuation
+  const hasPunctuation = /[。！？]/.test(text);
+  let parts;
+  if (hasPunctuation) {
+    parts = text.split(/(?<=[。！？])/);
+  } else {
+    // YouTube transcripts: split on spaces, then group into chunks up to maxLen
+    parts = text.split(/\s+/).filter(Boolean);
+    const chunks = [];
+    let current = '';
+    for (const word of parts) {
+      if (current && (current + ' ' + word).length > maxLen) {
+        chunks.push(current.trim());
+        current = word;
+      } else {
+        current = current ? current + ' ' + word : word;
+      }
+    }
+    if (current.trim()) chunks.push(current.trim());
+    return chunks.filter(s => s.length > 0);
+  }
   const sentences = [];
   let current = '';
   for (const part of parts) {
@@ -3943,6 +3965,7 @@ function splitIntoSentences(text, maxLen) {
   if (current.trim()) sentences.push(current.trim());
   return sentences.filter(s => s.length > 0);
 }
+
 
 function warmupBreakdownContinue() {
   console.log('warmupBreakdownContinue called, _breakdownOnComplete:', typeof window._breakdownOnComplete, 'warmupOnComplete:', typeof window.warmupOnComplete);
