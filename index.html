@@ -1450,7 +1450,7 @@
           </div>
           <div class="input-group" id="yt-transcript-group" style="display:none">
             <label class="input-label">Transcript</label>
-            <textarea id="yt-transcript" placeholder="Paste transcript here if fetch fails..." oninput="updateCounter('yt-transcript','yt-counter'); checkForChunks('yt-transcript')"></textarea>
+            <textarea id="yt-transcript" placeholder="Paste transcript here if fetch fails..." oninput="updateCounter('yt-transcript','yt-counter'); checkForChunks('yt-transcript')" onpaste="setTimeout(()=>{this.value=toTraditional(this.value);updateCounter('yt-transcript','yt-counter');},0)"></textarea>
             <div class="char-counter">
               <span class="char-count" id="yt-counter">0 chars</span>
               <span class="char-warning" id="yt-warning"></span>
@@ -1468,7 +1468,7 @@
             </div>
           </div>
           <div class="input-group">
-            <textarea id="article-text" placeholder="Or paste article text directly here..." oninput="updateCounter('article-text','article-counter')"></textarea>
+            <textarea id="article-text" placeholder="Or paste article text directly here..." oninput="updateCounter('article-text','article-counter')" onpaste="setTimeout(()=>{this.value=toTraditional(this.value);updateCounter('article-text','article-counter');},0)"></textarea>
             <div class="char-counter">
               <span class="char-count" id="article-counter">0 chars</span>
               <span class="char-warning" id="article-warning"></span>
@@ -1490,7 +1490,7 @@
           </div>
           <div class="input-group">
             <label class="input-label">Or paste transcript</label>
-            <textarea id="podcast-text" placeholder="Paste your podcast transcript here..." oninput="updateCounter('podcast-text','podcast-counter')"></textarea>
+            <textarea id="podcast-text" placeholder="Paste your podcast transcript here..." oninput="updateCounter('podcast-text','podcast-counter')" onpaste="setTimeout(()=>{this.value=toTraditional(this.value);updateCounter('podcast-text','podcast-counter');},0)"></textarea>
             <div class="char-counter">
               <span class="char-count" id="podcast-counter">0 chars</span>
               <span class="char-warning" id="podcast-warning"></span>
@@ -1500,7 +1500,7 @@
 
         <div class="source-panel" id="source-paste">
           <div class="input-group">
-            <textarea id="paste-text" style="min-height:140px" placeholder="Paste any Chinese text here — article excerpt, dialogue, whatever you want to study..." oninput="updateCounter('paste-text','paste-counter'); checkForChunks('paste-text')"></textarea>
+            <textarea id="paste-text" style="min-height:140px" placeholder="Paste any Chinese text here — article excerpt, dialogue, whatever you want to study..." oninput="updateCounter('paste-text','paste-counter'); checkForChunks('paste-text')" onpaste="setTimeout(()=>{this.value=toTraditional(this.value);updateCounter('paste-text','paste-counter');checkForChunks('paste-text');},0)"></textarea>
             <div class="char-counter">
               <span class="char-count" id="paste-counter">0 chars</span>
               <span class="char-warning" id="paste-warning"></span>
