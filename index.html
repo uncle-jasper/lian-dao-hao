@@ -1450,7 +1450,7 @@
           </div>
           <div class="input-group" id="yt-transcript-group" style="display:none">
             <label class="input-label">Transcript</label>
-            <textarea id="yt-transcript" placeholder="Paste transcript here if fetch fails..." oninput="updateCounter('yt-transcript','yt-counter'); checkForChunks('yt-transcript')" onpaste="setTimeout(()=>{this.value=toTraditional(this.value);updateCounter('yt-transcript','yt-counter');},0)"></textarea>
+            <textarea id="yt-transcript" placeholder="Paste transcript here if fetch fails..." oninput="updateCounter('yt-transcript','yt-counter'); checkForChunks('yt-transcript')"></textarea>
             <div class="char-counter">
               <span class="char-count" id="yt-counter">0 chars</span>
               <span class="char-warning" id="yt-warning"></span>
@@ -1468,7 +1468,7 @@
             </div>
           </div>
           <div class="input-group">
-            <textarea id="article-text" placeholder="Or paste article text directly here..." oninput="updateCounter('article-text','article-counter')" onpaste="setTimeout(()=>{this.value=toTraditional(this.value);updateCounter('article-text','article-counter');},0)"></textarea>
+            <textarea id="article-text" placeholder="Or paste article text directly here..." oninput="updateCounter('article-text','article-counter')"></textarea>
             <div class="char-counter">
               <span class="char-count" id="article-counter">0 chars</span>
               <span class="char-warning" id="article-warning"></span>
@@ -1490,7 +1490,7 @@
           </div>
           <div class="input-group">
             <label class="input-label">Or paste transcript</label>
-            <textarea id="podcast-text" placeholder="Paste your podcast transcript here..." oninput="updateCounter('podcast-text','podcast-counter')" onpaste="setTimeout(()=>{this.value=toTraditional(this.value);updateCounter('podcast-text','podcast-counter');},0)"></textarea>
+            <textarea id="podcast-text" placeholder="Paste your podcast transcript here..." oninput="updateCounter('podcast-text','podcast-counter')"></textarea>
             <div class="char-counter">
               <span class="char-count" id="podcast-counter">0 chars</span>
               <span class="char-warning" id="podcast-warning"></span>
@@ -1500,7 +1500,7 @@
 
         <div class="source-panel" id="source-paste">
           <div class="input-group">
-            <textarea id="paste-text" style="min-height:140px" placeholder="Paste any Chinese text here — article excerpt, dialogue, whatever you want to study..." oninput="updateCounter('paste-text','paste-counter'); checkForChunks('paste-text')" onpaste="setTimeout(()=>{this.value=toTraditional(this.value);updateCounter('paste-text','paste-counter');checkForChunks('paste-text');},0)"></textarea>
+            <textarea id="paste-text" style="min-height:140px" placeholder="Paste any Chinese text here — article excerpt, dialogue, whatever you want to study..." oninput="updateCounter('paste-text','paste-counter'); checkForChunks('paste-text')"></textarea>
             <div class="char-counter">
               <span class="char-count" id="paste-counter">0 chars</span>
               <span class="char-warning" id="paste-warning"></span>
@@ -3465,7 +3465,7 @@ function renderRoleplay() {
     <div class="challenge-block" style="margin-bottom:16px;">
       <div class="card-title">Scenario</div>
       <div style="font-size:14px; color:var(--text-dim); margin-bottom:8px;">${roleplayScenario.scenario_en}</div>
-      <div class="challenge-text" style="font-size:17px;">${roleplayScenario.scenario_zh}</div>
+      <div class="challenge-text" style="font-size:17px;">${roleplayScenario.scenario_zh} ${listenBtn(roleplayScenario.scenario_zh)}</div>
       <div style="margin-top:10px; font-size:13px; color:var(--text-dim);">
         <strong style="color:var(--text);">You:</strong> ${roleplayScenario.student_role} &nbsp;|&nbsp;
         <strong style="color:var(--text);">Coach:</strong> ${roleplayScenario.your_role}
@@ -3542,16 +3542,16 @@ async function sendRoleplayMessage() {
       content: m.content
     }));
 
-    const sysAddition = `\n\nYou are playing: ${roleplayScenario.your_role}. Stay in character and respond naturally in Traditional Chinese. Structure your response exactly like this:\n1. Your in-character Chinese response\n2. An English translation of your Chinese response in {curly braces}\n3. A brief OOC coaching note in [square brackets] in ${state.prefs.feedbackLang === 'english' ? 'English' : 'Chinese'} noting: (1) any grammar or word choice improvements for the student's last message, (2) for each target vocab word the student used correctly, prefix it with ✓ like: ✓而且. Target vocab: ${vocabTargets}. Keep OOC note short — 1-2 sentences.`;
+    const sysAddition = `\n\nYou are playing: ${roleplayScenario.your_role}. Stay in character and respond naturally in Traditional Chinese. You MUST structure every response in exactly this format with no exceptions:\n1. Your in-character Chinese response\n2. {English translation of your Chinese response on a single line}\n3. [OOC note in ${state.prefs.feedbackLang === 'english' ? 'English' : 'Chinese'}: (1) grammar or word choice feedback on student's last message, (2) mark correctly used target vocab with ✓ like: ✓而且. Target vocab: ${vocabTargets}. Keep it to 1-2 sentences.]`;
 
     const result = await callClaude(messages, getSystemPrompt() + sysAddition, 500);
 
     // Split in-character from translation and OOC note
-    const oocMatch = result.match(/\[([^\]]+)\]/);
-    const enMatch = result.match(/\{([^}]+)\}/);
-    const inChar = result.replace(/\{[^}]+\}/, '').replace(/\[([^\]]+)\]/, '').trim();
-    const oocNote = oocMatch ? oocMatch[1] : '';
-    const enTranslation = enMatch ? enMatch[1] : '';
+    const oocMatch = result.match(/\[([\s\S]+?)\]/);
+    const enMatch = result.match(/\{([\s\S]+?)\}/);
+    const inChar = result.replace(/\{[\s\S]+?\}/, '').replace(/\[[\s\S]+?\]/, '').trim();
+    const oocNote = oocMatch ? oocMatch[1].trim() : '';
+    const enTranslation = enMatch ? enMatch[1].trim() : '';
 
     // Auto-increment correct count for bank items Claude says were used well
     // Claude marks them with ✓word in the OOC note
@@ -4578,6 +4578,19 @@ function initPWA() {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
 }
+
+// ═══════════════════════════════════════════════════
+// GLOBAL SIMPLIFIED → TRADITIONAL PASTE CONVERSION
+// Applies to every textarea in the app
+// ═══════════════════════════════════════════════════
+document.addEventListener('paste', (e) => {
+  const el = e.target;
+  if (el.tagName !== 'TEXTAREA' && el.tagName !== 'INPUT') return;
+  setTimeout(() => {
+    const converted = toTraditional(el.value);
+    if (converted !== el.value) el.value = converted;
+  }, 0);
+});
 
 // ═══════════════════════════════════════════════════
 // BOOT
