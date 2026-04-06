@@ -1,4 +1,4 @@
-const CACHE = 'lian-dao-hao-v2';
+const CACHE = 'lian-dao-hao-v6';
 
 const PRECACHE = [
   './',
