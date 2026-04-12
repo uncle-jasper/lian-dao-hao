@@ -3622,7 +3622,7 @@ function toggleMic(targetId, btn) {
   recognition.onresult = (event) => {
     const transcript = event.results[0][0].transcript;
     const target = document.getElementById(targetId);
-    if (target) target.value = (target.value ? target.value + ' ' : '') + transcript;
+    if (target) target.value = (target.value ? target.value + ' ' : '') + toTraditional(transcript);
   };
 
   recognition.onend = () => {
