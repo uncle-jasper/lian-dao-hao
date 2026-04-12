@@ -2570,7 +2570,7 @@ Extract a warm-up overview strictly from the content above — every vocab item 
   }
 }`;
 
-    const result = await callClaude([{ role: 'user', content: prompt }], getSystemPrompt(), 1200);
+    const result = await callClaude([{ role: 'user', content: prompt }], getSystemPrompt(), state.prefs.efficientMode ? 1500 : 2000);
     const clean = result.replace(/```json|```/g, '').trim();
     let warmupData;
     try { warmupData = JSON.parse(clean); } catch(e) {
@@ -2630,6 +2630,7 @@ Extract a warm-up overview strictly from the content above — every vocab item 
 // SEGMENT: COMPREHENSION
 // ═══════════════════════════════════════════════════
 let comprehensionData = null;
+let comprehensionError = null;
 
 async function generateComprehension() {
   const focusNote = state.session.focus ? `\nStudent's focus: ${state.session.focus}` : '';
@@ -2661,12 +2662,14 @@ Generate a comprehension challenge set based STRICTLY on the content above. Ever
 
 Include 3 multiple choice and 2 open-ended questions. Make them genuinely test comprehension, not just surface facts.`;
 
+  comprehensionError = null;
   try {
-    const result = await callClaude([{ role: 'user', content: prompt }], getSystemPrompt(), 1200);
+    const result = await callClaude([{ role: 'user', content: prompt }], getSystemPrompt(), state.prefs.efficientMode ? 2500 : 3000);
     const clean = result.replace(/```json|```/g, '').trim();
     comprehensionData = JSON.parse(clean);
   } catch(e) {
     comprehensionData = null;
+    comprehensionError = e.message || 'Generation failed';
   }
 }
 
@@ -2683,6 +2686,10 @@ function renderComprehension() {
   const container = document.getElementById('comprehension-content');
   const actions = document.getElementById('comprehension-actions');
 
+  if (comprehensionError) {
+    container.innerHTML = `<div class="status-bar error">Failed to generate comprehension: ${comprehensionError} <button class="btn sm" style="margin-left:12px" onclick="comprehensionError=null;generateComprehension().then(()=>renderComprehension())">Retry</button></div>`;
+    return;
+  }
   if (!comprehensionData) {
     container.innerHTML = `<div class="status-bar"><div class="loading-dots"><span></span><span></span><span></span></div> Still generating — one moment...</div>`;
     setTimeout(() => renderComprehension(), 2000);
@@ -2776,6 +2783,7 @@ async function submitOpenAnswer(qIndex, sample) {
 // SEGMENT: VOCAB & GRAMMAR
 // ═══════════════════════════════════════════════════
 let vocabData = null;
+let vocabError = null;
 
 async function generateVocabChallenges() {
   const bankNote = state.bank.length > 0
@@ -2806,12 +2814,14 @@ Generate vocabulary and grammar usage challenges drawn strictly from the content
 
 Include 6-8 vocab items (mixing content words and any struggle bank items), 1 grammar challenge, and 3 sentence production challenges.`;
 
+  vocabError = null;
   try {
-    const result = await callClaude([{ role: 'user', content: prompt }], getSystemPrompt(), 1500);
+    const result = await callClaude([{ role: 'user', content: prompt }], getSystemPrompt(), state.prefs.efficientMode ? 2000 : 3000);
     const clean = result.replace(/```json|```/g, '').trim();
     vocabData = JSON.parse(clean);
   } catch(e) {
     vocabData = null;
+    vocabError = e.message || 'Generation failed';
   }
 }
 
@@ -2819,6 +2829,10 @@ function renderVocab() {
   const container = document.getElementById('vocab-content');
   const actions = document.getElementById('vocab-actions');
 
+  if (vocabError) {
+    container.innerHTML = `<div class="status-bar error">Failed to generate vocab: ${vocabError} <button class="btn sm" style="margin-left:12px" onclick="vocabError=null;generateVocabChallenges().then(()=>renderVocab())">Retry</button></div>`;
+    return;
+  }
   if (!vocabData) {
     container.innerHTML = `<div class="status-bar"><div class="loading-dots"><span></span><span></span><span></span></div> Generating vocab challenges...</div>`;
     setTimeout(() => renderVocab(), 2000);
@@ -2930,6 +2944,7 @@ async function evalSentence(index, targetWord) {
 // SEGMENT: ROLEPLAY
 // ═══════════════════════════════════════════════════
 let roleplayScenario = null;
+let roleplayError = null;
 
 async function generateRoleplayScenario() {
   const bankNote = state.bank.length > 0
@@ -2950,6 +2965,7 @@ Create a short roleplay scenario in JSON. Return ONLY valid JSON:
   "vocab_targets": ["word1", "word2", "word3"]
 }`;
 
+  roleplayError = null;
   try {
     const result = await callClaude([{ role: 'user', content: prompt }], getSystemPrompt(), 600);
     const clean = result.replace(/```json|```/g, '').trim();
@@ -2961,12 +2977,17 @@ Create a short roleplay scenario in JSON. Return ONLY valid JSON:
     }];
   } catch(e) {
     roleplayScenario = null;
+    roleplayError = e.message || 'Generation failed';
   }
 }
 
 function renderRoleplay() {
   const container = document.getElementById('roleplay-content');
 
+  if (roleplayError) {
+    container.innerHTML = `<div class="status-bar error">Failed to generate roleplay: ${roleplayError} <button class="btn sm" style="margin-left:12px" onclick="roleplayError=null;generateRoleplayScenario().then(()=>renderRoleplay())">Retry</button></div>`;
+    return;
+  }
   if (!roleplayScenario) {
     container.innerHTML = `<div class="status-bar"><div class="loading-dots"><span></span><span></span><span></span></div> Setting up scenario...</div>`;
     setTimeout(() => renderRoleplay(), 2000);
@@ -3183,6 +3204,9 @@ function continueNextChunk() {
   comprehensionData = null;
   vocabData = null;
   roleplayScenario = null;
+  comprehensionError = null;
+  vocabError = null;
+  roleplayError = null;
   showScreen('warmup');
   setNavActive('warmup');
   updateChunkProgress();
@@ -3198,6 +3222,9 @@ function newSession() {
   comprehensionData = null;
   vocabData = null;
   roleplayScenario = null;
+  comprehensionError = null;
+  vocabError = null;
+  roleplayError = null;
   // Reset chunk selector UI
   const chunkArea = document.getElementById('chunk-selector-area');
   if (chunkArea) { chunkArea.style.display = 'none'; chunkArea._selectedChunk = null; }
