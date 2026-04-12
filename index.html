@@ -1264,6 +1264,8 @@
         <p>Choose your content source and configure this session.</p>
       </div>
 
+      <!-- Session resume card — shown if a mid-session save exists -->
+      <div id="session-resume-card" style="display:none;margin-bottom:12px;"></div>
       <!-- Resume card — shown if a previous chunked session exists -->
       <div id="resume-card" style="display:none;"></div>
 
@@ -1704,6 +1706,7 @@ function init() {
   renderBank();
   updateNavState();
   checkResumeCard();
+  checkSessionResumeCard();
   updateChunkProgress();
 
   if (!state.anthropicKey) {
@@ -1867,6 +1870,119 @@ function saveChunkState() {
     sourcePreview: state.chunks.sourcePreview || '',
   }));
 }
+
+// ═══════════════════════════════════════════════════
+// SESSION PROGRESS — SAVE & RESTORE
+// ═══════════════════════════════════════════════════
+function saveSessionProgress(segment) {
+  if (!state.session.active || !state.session.content) return;
+  const data = {
+    segment,
+    savedAt: Date.now(),
+    session: {
+      content: state.session.content,
+      focus: state.session.focus,
+      completedSegments: [...state.session.completedSegments],
+      flaggedItems: [...state.session.flaggedItems],
+      comprehensionAnswers: [...(state.session.comprehensionAnswers || [])],
+      roleplayHistory: [...(state.session.roleplayHistory || [])],
+    },
+    comprehensionData: comprehensionData ? JSON.parse(JSON.stringify(comprehensionData)) : null,
+    vocabData: vocabData ? JSON.parse(JSON.stringify(vocabData)) : null,
+    roleplayScenario: roleplayScenario ? JSON.parse(JSON.stringify(roleplayScenario)) : null,
+    chunkIndex: state.chunks.currentIndex,
+    prefs: { efficientMode: state.prefs.efficientMode },
+  };
+  try { localStorage.setItem('mc_session', JSON.stringify(data)); } catch(e) {}
+}
+
+function clearSessionProgress() {
+  localStorage.removeItem('mc_session');
+}
+
+function checkSessionResumeCard() {
+  const card = document.getElementById('session-resume-card');
+  if (!card) return;
+  const saved = JSON.parse(localStorage.getItem('mc_session') || 'null');
+  if (!saved?.session?.content || !saved?.segment) {
+    card.style.display = 'none';
+    return;
+  }
+  const segLabels = { warmup: 'Warm-up', comprehension: 'Comprehension', vocab: 'Vocab & Grammar', roleplay: 'Roleplay' };
+  const segLabel = segLabels[saved.segment] || saved.segment;
+  const preview = saved.session.content.slice(0, 80).replace(/\n/g, ' ');
+  const age = Date.now() - (saved.savedAt || 0);
+  const ageStr = age < 3600000 ? Math.round(age / 60000) + 'm ago'
+               : age < 86400000 ? Math.round(age / 3600000) + 'h ago'
+               : Math.round(age / 86400000) + 'd ago';
+  card.style.display = 'block';
+  card.innerHTML = `
+    <div class="resume-card" onclick="restoreSessionProgress()" style="border-color:var(--accent-dim);">
+      <div class="resume-icon" style="color:var(--accent);">↩</div>
+      <div class="resume-body">
+        <div class="resume-title" style="color:var(--accent);">Resume session — ${segLabel}</div>
+        <div class="resume-preview">${preview}…</div>
+        <div class="resume-meta">${ageStr}</div>
+      </div>
+      <div class="resume-dismiss" onclick="dismissSessionResumeCard(event)" title="Dismiss">✕</div>
+    </div>`;
+}
+
+function dismissSessionResumeCard(e) {
+  e.stopPropagation();
+  clearSessionProgress();
+  document.getElementById('session-resume-card').style.display = 'none';
+}
+
+function restoreSessionProgress() {
+  const saved = JSON.parse(localStorage.getItem('mc_session') || 'null');
+  if (!saved?.session?.content) return;
+
+  // Restore session state
+  state.session.content = saved.session.content;
+  state.session.focus = saved.session.focus || '';
+  state.session.active = true;
+  state.session.completedSegments = saved.session.completedSegments || [];
+  state.session.flaggedItems = saved.session.flaggedItems || [];
+  state.session.comprehensionAnswers = saved.session.comprehensionAnswers || [];
+  state.session.roleplayHistory = saved.session.roleplayHistory || [];
+
+  // Restore generated data
+  comprehensionData = saved.comprehensionData || null;
+  vocabData = saved.vocabData || null;
+  roleplayScenario = saved.roleplayScenario || null;
+  comprehensionError = null;
+  vocabError = null;
+  roleplayError = null;
+
+  // Restore chunk index
+  if (typeof saved.chunkIndex === 'number') {
+    state.chunks.currentIndex = saved.chunkIndex;
+  }
+
+  updateNavState();
+  updateChunkProgress();
+
+  // Navigate to saved segment
+  const seg = saved.segment || 'warmup';
+  showScreen(seg);
+  setNavActive(seg);
+
+  // If segment data is missing, regenerate it
+  if (seg === 'comprehension' && !comprehensionData) generateComprehension();
+  if (seg === 'vocab' && !vocabData) generateVocabChallenges();
+  if (seg === 'roleplay' && !roleplayScenario) generateRoleplayScenario();
+
+  // Render the segment
+  if (seg === 'comprehension') renderComprehension();
+  else if (seg === 'vocab') renderVocab();
+  else if (seg === 'roleplay') renderRoleplay();
+  else if (seg === 'warmup') {
+    // For warmup, skip Phase 1 audio and go straight to card generation
+    generateWarmup();
+  }
+}
+
 
 function checkResumeCard() {
   const card = document.getElementById('resume-card');
@@ -2579,6 +2695,7 @@ Extract a warm-up overview strictly from the content above — every vocab item 
       actions.style.display = 'flex';
       state.session.completedSegments.push('warmup');
       updateNavState();
+      saveSessionProgress('warmup');
       generateComprehension();
       return;
     }
@@ -2619,6 +2736,7 @@ Extract a warm-up overview strictly from the content above — every vocab item 
     actions.style.display = 'flex';
     state.session.completedSegments.push('warmup');
     updateNavState();
+    saveSessionProgress('warmup');
     // Pre-generate comprehension in background
     generateComprehension();
   } catch(e) {
@@ -2676,6 +2794,7 @@ Include 3 multiple choice and 2 open-ended questions. Make them genuinely test c
 function goToSegment(name) {
   showScreen(name);
   setNavActive(name);
+  if (name !== 'review') saveSessionProgress(name);
   if (name === 'comprehension') renderComprehension();
   if (name === 'vocab') renderVocab();
   if (name === 'roleplay') renderRoleplay();
@@ -2738,6 +2857,7 @@ function renderComprehension() {
   actions.style.display = 'flex';
   state.session.completedSegments.push('comprehension');
   updateNavState();
+  saveSessionProgress('comprehension');
   generateVocabChallenges();
 }
 
@@ -2904,6 +3024,7 @@ function renderVocab() {
   actions.style.display = 'flex';
   state.session.completedSegments.push('vocab');
   updateNavState();
+  saveSessionProgress('vocab');
   generateRoleplayScenario();
 }
 
@@ -3179,6 +3300,7 @@ function renderReview() {
 
   state.session.completedSegments.push('review');
   updateNavState();
+  clearSessionProgress();
 
   // Advance chunk index now that this session is complete
   if (state.chunks.list.length > 0) {
@@ -3214,6 +3336,7 @@ function continueNextChunk() {
 }
 
 function newSession() {
+  clearSessionProgress();
   state.session = {
     active: false, content: '', contentType: '',
     focus: '', currentSegment: null, completedSegments: [], flaggedItems: [],
@@ -3232,6 +3355,7 @@ function newSession() {
   showScreen('setup');
   updateNavState();
   checkResumeCard();
+  checkSessionResumeCard();
   updateChunkProgress();
 }
 
